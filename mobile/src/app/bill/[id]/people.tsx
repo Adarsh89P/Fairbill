@@ -6,6 +6,7 @@ import { Avatar, Banner, Btn, Card, Chip, Empty, Field, IconBtn, Row, Screen, Se
 import { uid } from '../../../engine/factory';
 import { sum } from '../../../engine/money';
 import { fmt } from '../../../lib/billText';
+import { contactsSupported } from '../../../lib/contacts';
 import { notify } from '../../../lib/confirm';
 import { useBill, useStore } from '../../../store/AppStore';
 import { useTheme } from '../../../theme/ThemeProvider';
@@ -59,7 +60,7 @@ export default function People() {
     if (!g) return;
     update((d) => {
       for (const m of g.members) {
-        if (!d.participants.some((p) => p.name.toLowerCase() === m.name.toLowerCase())) d.participants.push({ id: uid('p'), name: m.name });
+        if (!d.participants.some((p) => p.name.toLowerCase() === m.name.toLowerCase())) d.participants.push({ id: uid('p'), name: m.name, phone: m.phone });
       }
       d.groupId = g.id;
     });
@@ -67,7 +68,7 @@ export default function People() {
   const saveAsGroup = () => {
     const others = bill.participants.filter((p) => !p.isMe);
     if (!others.length) return notify('Add some friends first');
-    saveGroup({ id: uid('g'), name: bill.restaurant.value ? `${bill.restaurant.value} group` : 'My group', members: others.map((p) => ({ id: uid('m'), name: p.name })), favourite: true, updatedAt: '' });
+    saveGroup({ id: uid('g'), name: bill.restaurant.value ? `${bill.restaurant.value} group` : 'My group', members: others.map((p) => ({ id: uid('m'), name: p.name, phone: p.phone })), favourite: true, updatedAt: '' });
     notify('Saved as a favourite group', 'Find it under Groups.');
   };
   const setSinglePayer = (pid: string) => update((d) => { d.payments = { [pid]: d.total.value ?? 0 }; });
@@ -96,13 +97,16 @@ export default function People() {
       <SectionTitle right={<T v="small" muted>{bill.participants.length} people</T>}>People</SectionTitle>
       <Field value={name} onChangeText={setName} placeholder="Friend's name" returnKeyType="done" onSubmitEditing={() => add(name)} blurOnSubmit={false}
         accessibilityLabel="Friend's name" right={<Btn title="Add" small onPress={() => add(name)} disabled={!name.trim()} />} />
+      {contactsSupported ? (
+        <Btn title="Add from contacts" icon="users" variant="secondary" onPress={() => router.push(`/bill/${bill.id}/contacts`)} />
+      ) : null}
       <Card style={{ padding: 0 }}>
         {bill.participants.map((p, i) => (
           <Row key={p.id} style={{ paddingHorizontal: space(4), paddingVertical: space(2.5), borderTopWidth: i ? 1 : 0, borderColor: c.border }}>
             <Avatar name={p.name} id={p.id} />
             <View style={{ flex: 1 }}>
               <T v="bodyStrong">{p.name}</T>
-              {p.isMe ? <T v="small" muted>You</T> : null}
+              {p.isMe ? <T v="small" muted>You</T> : p.phone ? <T v="small" muted>{p.phone}</T> : null}
             </View>
             <IconBtn icon="x" label={`Remove ${p.name}`} onPress={() => remove(p.id)} />
           </Row>

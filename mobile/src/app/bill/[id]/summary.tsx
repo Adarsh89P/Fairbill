@@ -115,6 +115,7 @@ export default function Summary() {
         <ShareTile icon="qr" label="QR & link" onPress={() => router.push(`/bill/${bill.id}/share`)} />
         <ShareTile icon="download" label={busy === 'pdf' ? 'Creating…' : 'PDF'} onPress={pdf} />
         <ShareTile icon="copy" label="Copy all" onPress={() => copy(wholeBillText(bill, computed, bill.share?.url), 'Summary')} />
+        <ShareTile icon="share" label="Image" onPress={() => router.push(`/bill/${bill.id}/image`)} />
       </View>
 
       {settlement.transfers.length ? (
@@ -154,6 +155,9 @@ export default function Summary() {
                 <T v="small" color={bal.pending > 0 ? c.warning : c.success} style={{ fontWeight: '600' }}>{status}</T>
               </View>
               <T v="amount">{fmt(bill, p.total)}</T>
+              {!bill.participants.find((x) => x.id === p.participantId)?.isMe ? (
+                <IconBtn icon="share" tone="primary" label={`Send ${nameOf(bill, p.participantId)} their share`} onPress={() => router.push(`/bill/${bill.id}/image?person=${p.participantId}`)} />
+              ) : null}
               <IconBtn icon="copy" label={`Copy ${nameOf(bill, p.participantId)}'s summary`} onPress={() => copy(personText(bill, computed, p.participantId), `${nameOf(bill, p.participantId)}'s summary`)} />
             </Row>
             <View style={{ gap: 4, paddingLeft: 52 }}>
@@ -182,7 +186,7 @@ function ShareTile({ icon, label, onPress }: { icon: IconName; label: string; on
   const { c } = useTheme();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
-      style={({ pressed }) => ({ flexGrow: 1, flexBasis: '22%', minWidth: 72, alignItems: 'center', gap: 6, paddingVertical: space(3), borderRadius: radius.md, backgroundColor: pressed ? c.surfaceAlt : c.surface, borderWidth: 1, borderColor: c.border })}>
+      style={({ pressed }) => ({ flexGrow: 1, flexBasis: '18%', minWidth: 64, alignItems: 'center', gap: 6, paddingVertical: space(3), borderRadius: radius.md, backgroundColor: pressed ? c.surfaceAlt : c.surface, borderWidth: 1, borderColor: c.border })}>
       <Icon name={icon} color={c.primary} />
       <T v="small" style={{ fontWeight: '600' }}>{label}</T>
     </Pressable>

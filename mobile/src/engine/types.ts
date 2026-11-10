@@ -64,6 +64,8 @@ export interface Participant {
   id: string;
   name: string;
   isMe?: boolean;
+  /** Phone number from contacts, used to message this person their share. */
+  phone?: string;
 }
 
 export type ShareMode = 'equal' | 'percent' | 'quantity';

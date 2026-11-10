@@ -46,6 +46,12 @@
           "cameraPermission": "FairBill uses the camera to scan your restaurant bill.",
           "photosPermission": "FairBill reads a bill photo you choose to upload."
         }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "FairBill uses your contacts so you can add friends to a bill and send them their share."
+        }
       ]
     ],
     "experiments": {

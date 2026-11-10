@@ -7,6 +7,7 @@ import { api, Session } from '../api/client';
 export interface GroupMember {
   id: string;
   name: string;
+  phone?: string;
 }
 export interface Group {
   id: string;
