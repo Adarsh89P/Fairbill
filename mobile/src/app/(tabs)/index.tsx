@@ -4,8 +4,10 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BillRow } from '../../components/BillRow';
 import { Icon } from '../../components/Icon';
-import { Card, Empty, Row, Screen, SectionTitle, T } from '../../components/ui';
+import { Btn, Card, Empty, Row, Screen, SectionTitle, T } from '../../components/ui';
 import { newBill } from '../../engine/factory';
+import { extractionToBill } from '../../extraction/toBill';
+import { SAMPLES } from '../../samples';
 import { useStore } from '../../store/AppStore';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius, space } from '../../theme/theme';
@@ -18,6 +20,13 @@ export default function Home() {
 
   const manual = () => {
     const b = newBill('manual', settings.currency);
+    saveBill(b);
+    router.push(`/bill/${b.id}/review`);
+  };
+
+  const sample = (kind: keyof typeof SAMPLES) => {
+    const b = extractionToBill(SAMPLES[kind].result, 'upload', settings.currency, SAMPLES[kind].image);
+    b.restaurant = { ...b.restaurant, value: `${b.restaurant.value ?? 'Restaurant'} (sample)` };
     saveBill(b);
     router.push(`/bill/${b.id}/review`);
   };
@@ -48,6 +57,15 @@ export default function Home() {
           <ActionTile icon="upload" title="Upload Bill" sub="From gallery" onPress={() => router.push({ pathname: '/scan', params: { source: 'library' } })} />
           <ActionTile icon="edit" title="Manual Bill" sub="Works offline" onPress={manual} />
         </Row>
+
+        <Card style={{ gap: space(2) }}>
+          <T v="bodyStrong">No bill handy?</T>
+          <T v="small" muted>Open a sample scan to see how FairBill reads a bill and flags anything unclear.</T>
+          <Row gap={2}>
+            <Btn title="Clear sample" small variant="secondary" icon="receipt" style={{ flex: 1 }} onPress={() => sample('clear')} />
+            <Btn title="Blurry sample" small variant="secondary" icon="alert" style={{ flex: 1 }} onPress={() => sample('blurry')} />
+          </Row>
+        </Card>
 
         <SectionTitle right={bills.length > 5 ? <T v="small" color={c.primary} style={{ fontWeight: '700' }} onPress={() => router.push('/bills')}>See all</T> : null}>
           Recent bills

@@ -31,7 +31,14 @@
       "output": "single"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "asyncRoutes": {
+            "web": false
+          }
+        }
+      ],
       "expo-sharing",
       [
         "expo-image-picker",

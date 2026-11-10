@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { DialogHost } from '../components/DialogHost';
 import { AppStoreProvider, useStore } from '../store/AppStore';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 
@@ -43,6 +44,7 @@ function Navigator() {
         <Stack.Screen name="stats" options={{ title: 'Monthly spending' }} />
         <Stack.Screen name="account" options={{ title: 'Account', presentation: 'modal' }} />
       </Stack>
+      <DialogHost />
     </NavThemeProvider>
   );
 }
