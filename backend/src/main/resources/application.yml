@@ -32,7 +32,9 @@ management:
         include: health
 
 fairbill:
-  public-base-url: ${FAIRBILL_PUBLIC_URL:http://localhost:8080}
+  public-base-url: ${FAIRBILL_PUBLIC_URL:}
+  # Optional: folder with the exported web app (npx expo export -p web); served at /
+  web-dir: ${FAIRBILL_WEB_DIR:}
   jwt:
     # 32+ random bytes, base64. When empty a random key is generated at startup (tokens then reset on restart).
     secret: ${FAIRBILL_JWT_SECRET:}

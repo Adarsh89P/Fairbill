@@ -111,7 +111,12 @@ public class ShareService {
     }
 
     public String url(String token) {
-        return props.publicBaseUrl().replaceAll("/+$", "") + "/s/" + token;
+        String base = props.publicBaseUrl();
+        if (base == null || base.isBlank()) {
+            // Use the address the request came in on (honours X-Forwarded-* behind proxies).
+            base = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
+        }
+        return base.replaceAll("/+$", "") + "/s/" + token;
     }
 
     private String newToken() {

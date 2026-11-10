@@ -39,6 +39,11 @@ public class ErrorHandler {
         return ResponseEntity.badRequest().body(new ErrorBody("NO_IMAGE", "No bill image was uploaded."));
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    ResponseEntity<ErrorBody> notFound() {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorBody("NOT_FOUND", "Not found."));
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<Map<String, String>> other(Exception e) {
         log.error("Unhandled error", e);

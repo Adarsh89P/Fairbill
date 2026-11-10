@@ -34,11 +34,12 @@ public class SecurityConfig {
             .cors(c -> { })
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives(
-                    "default-src 'none'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'")))
+                    "default-src 'none'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' blob:; img-src 'self' data: blob:; frame-ancestors 'none'")))
             .authorizeHttpRequests(a -> a
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/anonymous").permitAll()
-                .requestMatchers("/api/public/**", "/s/**", "/actuator/health", "/error").permitAll()
-                .anyRequest().authenticated())
+                .requestMatchers("/api/public/**", "/actuator/health").permitAll()
+                .requestMatchers("/api/**", "/actuator/**").authenticated()
+                .anyRequest().permitAll()) // web app, guest pages /s/**, /error
             .oauth2ResourceServer(o -> o.jwt(j -> { }));
         return http.build();
     }

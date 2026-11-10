@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Bill } from '../engine/types';
 import { api, Session } from '../api/client';
@@ -23,7 +24,9 @@ export interface Settings {
   apiUrl: string;
 }
 
-const DEFAULT_API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
+const DEFAULT_API =
+  process.env.EXPO_PUBLIC_API_URL ??
+  (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
 const DEFAULT_SETTINGS: Settings = { name: 'Me', currency: 'INR', theme: 'system', keepReceipts: false, apiUrl: DEFAULT_API };
 const KEYS = { bills: 'fb.bills.v1', groups: 'fb.groups.v1', settings: 'fb.settings.v1', session: 'fb.session.v1' };
 
