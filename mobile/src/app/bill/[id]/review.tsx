@@ -3,11 +3,12 @@ import React, { useMemo, useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { Icon } from '../../../components/Icon';
 import { MoneyField } from '../../../components/MoneyField';
+import { canShowOnPhoto, ReceiptCrop, ReceiptOverview, unionBox } from '../../../components/ReceiptCrop';
 import { Banner, Btn, Card, Divider, Empty, Field, IconBtn, Row, Screen, SectionTitle, StatusPill, Steps, T } from '../../../components/ui';
 import { newCharge } from '../../../engine/factory';
 import { sum } from '../../../engine/money';
 import { computeSplit, findDuplicates, itemNet, itemStatus, pendingReview } from '../../../engine/split';
-import type { Bill, BillCharge, BillItem, Tracked } from '../../../engine/types';
+import type { Bill, BillCharge, BillItem, Box, Tracked } from '../../../engine/types';
 import { fmt } from '../../../lib/billText';
 import { confirmAction } from '../../../lib/confirm';
 import { useBill } from '../../../store/AppStore';
@@ -94,14 +95,12 @@ export default function Review() {
               ) : null}
               <View style={{ flex: 1 }}>
                 <T v="bodyStrong">Bill photo</T>
-                <T v="small" muted>{bill.receiptImageUri ? 'Tap to compare with what we read' : 'Photo not kept on this device'}</T>
+                <T v="small" muted>{!bill.receiptImageUri ? 'Photo not kept on this device' : bill.receiptSize ? 'Values to check are zoomed in below. Tap for the full photo.' : 'Tap to compare with what we read'}</T>
               </View>
               <Btn title="Retake" icon="camera" variant="secondary" small
                 onPress={() => router.push({ pathname: '/scan', params: { source: 'camera', replace: bill.id } })} />
             </Row>
-            {showImage && bill.receiptImageUri ? (
-              <Image source={{ uri: bill.receiptImageUri }} style={{ width: '100%', aspectRatio: 0.6, borderRadius: radius.md }} resizeMode="contain" />
-            ) : null}
+            {showImage && bill.receiptImageUri ? <ReceiptOverview bill={bill} marks={flaggedMarks(bill)} /> : null}
           </Card>
         ) : null}
 
@@ -150,6 +149,7 @@ export default function Review() {
                 warn={bill.date.status === 'verify'} hint={bill.date.note} />
             </View>
           </Row>
+          {bill.date.status === 'verify' && canShowOnPhoto(bill, bill.date.box) ? <ReceiptCrop bill={bill} focus={bill.date.box} label="the date" /> : null}
         </Card>
 
         {/* ---------- items ---------- */}
@@ -207,6 +207,7 @@ export default function Review() {
           <MoneyField label="Final bill amount (as printed)" currency={bill.currency} value={bill.total.value}
             warn={bill.total.status !== 'ok'} hint={bill.total.status === 'missing' ? 'Not detected — enter the amount printed on the bill' : bill.total.note}
             onChange={(v) => update((d) => { d.total = v === null ? { value: null, status: 'missing' } : { value: v, status: 'ok' }; })} />
+          {bill.total.status !== 'ok' && canShowOnPhoto(bill, bill.total.box) ? <ReceiptCrop bill={bill} focus={bill.total.box} tone={bill.total.status} label="the bill total" /> : null}
           {bill.total.status === 'verify' && bill.total.value !== null ? (
             <Btn title="This amount is correct" icon="check" variant="secondary" small onPress={() => update((d) => { d.total.status = 'ok'; })} />
           ) : null}
@@ -276,8 +277,32 @@ function ItemRow({ bill, item, first, duplicate, onDelete, onVerify }: {
         {item.discount ? <T v="small" muted>incl. discount {fmt(bill, item.discount)}</T> : null}
         {note && st !== 'ok' ? <T v="small" muted style={{ flexShrink: 1 }}>{note}</T> : null}
       </Row>
+      {st !== 'ok' && canShowOnPhoto(bill, itemLine(item)) ? (
+        <ReceiptCrop bill={bill} line={itemLine(item)} focus={itemFocus(item)} tone={st} label={item.name.value ?? 'this item'} />
+      ) : null}
     </View>
   );
+}
+
+function itemLine(it: BillItem): Box | undefined {
+  return unionBox(it.name.box, it.quantity.box, it.unitPrice.box, it.amount.box);
+}
+
+/** The specific value that needs checking: the price first, then the name, then the quantity. */
+function itemFocus(it: BillItem): Box | undefined {
+  return [it.amount, it.name, it.quantity].find((f) => f.status !== 'ok' && f.box)?.box;
+}
+
+function flaggedMarks(bill: Bill): { box: Box; tone: 'verify' | 'missing' }[] {
+  const marks: { box: Box; tone: 'verify' | 'missing' }[] = [];
+  for (const it of bill.items) {
+    const st = itemStatus(it);
+    const b = itemFocus(it) ?? itemLine(it);
+    if (st !== 'ok' && b) marks.push({ box: b, tone: st });
+  }
+  for (const ch of bill.charges) if (ch.amount.status !== 'ok' && ch.amount.box) marks.push({ box: ch.amount.box, tone: ch.amount.status });
+  for (const f of [bill.total, bill.subtotal, bill.date, bill.restaurant]) if (f.status === 'verify' && f.box) marks.push({ box: f.box, tone: 'verify' });
+  return marks;
 }
 
 function ChargeRow({ bill, charge, first, onDelete, onVerify }: { bill: Bill; charge: BillCharge; first: boolean; onDelete: () => void; onVerify: () => void }) {
@@ -296,6 +321,7 @@ function ChargeRow({ bill, charge, first, onDelete, onVerify }: { bill: Bill; ch
         <IconBtn icon="trash" label="Remove charge" tone="danger" onPress={onDelete} />
       </Row>
       {st !== 'ok' ? <Row gap={2}><StatusPill status={st} label={st === 'verify' ? 'Needs review' : 'Not detected'} />{charge.amount.note ? <T v="small" muted style={{ flexShrink: 1 }}>{charge.amount.note}</T> : null}</Row> : null}
+      {st !== 'ok' && canShowOnPhoto(bill, charge.amount.box) ? <ReceiptCrop bill={bill} focus={charge.amount.box} tone={st} label={charge.label} /> : null}
     </View>
   );
 }

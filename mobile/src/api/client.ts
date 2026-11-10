@@ -22,11 +22,25 @@ export interface ShareSnapshot {
   people: { id: string; name: string; total: number; lines: { label: string; amount: number }[] }[];
   transfers: { from: string; to: string; amount: number }[];
 }
+/** What friends pick from on the shared link. Amounts in minor units. */
+export interface ClaimSnapshot {
+  restaurant: string | null;
+  currency: string;
+  items: { id: string; name: string; amount: number; quantity: number | null }[];
+  /** guest = added themselves from the link. */
+  people: { id: string; name: string; guest?: boolean | null }[];
+}
 export interface ShareView {
   token: string;
   url: string;
-  bill: ShareSnapshot;
+  /** picking: friends tick their items; final: the split is published. */
+  phase: 'picking' | 'final' | 'none';
+  bill: ShareSnapshot | null;
+  claim: ClaimSnapshot | null;
+  /** participantId -> item ids they ticked. */
+  picks: Record<string, string[]>;
   paid: Record<string, { at: string; by: 'guest' | 'owner' }>;
+  hasPhoto: boolean;
   expiresAt: string;
 }
 
@@ -38,6 +52,27 @@ export class ApiError extends Error {
 }
 
 const TIMEOUT_MS = 60_000;
+
+/** data: URIs are decoded here because the page's security policy doesn't let fetch() read them. */
+async function webBlob(uri: string): Promise<Blob> {
+  const m = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(uri);
+  if (!m) return (await fetch(uri)).blob();
+  const raw = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return new Blob([bytes], { type: m[1] || 'application/octet-stream' });
+}
+
+async function imageForm(uri: string, mimeType: string): Promise<FormData> {
+  const form = new FormData();
+  const png = mimeType === 'image/png' || uri.startsWith('data:image/png');
+  if (Platform.OS === 'web') {
+    form.append('image', await webBlob(uri), png ? 'bill.png' : 'bill.jpg');
+  } else {
+    form.append('image', { uri, name: png ? 'bill.png' : 'bill.jpg', type: png ? 'image/png' : mimeType } as any);
+  }
+  return form;
+}
 
 export function api(baseUrl: string, token?: string) {
   const base = baseUrl.replace(/\/+$/, '');
@@ -84,14 +119,7 @@ export function api(baseUrl: string, token?: string) {
     me: () => request<SessionUser>('GET', '/api/auth/me'),
 
     async scanReceipt(uri: string, mimeType: string, store: boolean): Promise<ExtractionResult> {
-      const form = new FormData();
-      if (Platform.OS === 'web') {
-        const blob = await (await fetch(uri)).blob();
-        form.append('image', blob, mimeType === 'image/png' ? 'bill.png' : 'bill.jpg');
-      } else {
-        form.append('image', { uri, name: 'bill.jpg', type: mimeType } as any);
-      }
-      return request<ExtractionResult>('POST', `/api/receipts/scan?store=${store}`, undefined, form);
+      return request<ExtractionResult>('POST', `/api/receipts/scan?store=${store}`, undefined, await imageForm(uri, mimeType));
     },
     deleteReceipt: (id: string) => request<void>('DELETE', `/api/receipts/${encodeURIComponent(id)}`),
     deleteAllReceipts: () => request<{ deleted: number }>('DELETE', '/api/receipts'),
@@ -102,6 +130,11 @@ export function api(baseUrl: string, token?: string) {
 
     publishShare: (billId: string, bill: ShareSnapshot) => request<ShareView>('POST', '/api/shares', { billId, bill }),
     shareStatus: (shareToken: string) => request<ShareView>('GET', `/api/shares/${encodeURIComponent(shareToken)}`),
+    openPicking: (billId: string, claim: ClaimSnapshot) => request<ShareView>('POST', '/api/shares/picking', { billId, claim }),
+    async uploadSharePhoto(shareToken: string, uri: string, mimeType = 'image/jpeg'): Promise<ShareView> {
+      return request<ShareView>('PUT', `/api/shares/${encodeURIComponent(shareToken)}/photo`, undefined, await imageForm(uri, mimeType));
+    },
+    deleteSharePhoto: (shareToken: string) => request<ShareView>('DELETE', `/api/shares/${encodeURIComponent(shareToken)}/photo`),
     markPaid: (shareToken: string, pid: string, paid: boolean) =>
       request<ShareView>(paid ? 'POST' : 'DELETE', `/api/shares/${encodeURIComponent(shareToken)}/participants/${encodeURIComponent(pid)}/paid`),
   };

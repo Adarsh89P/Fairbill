@@ -13,6 +13,33 @@ import { useBill, useStore } from '../../../store/AppStore';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { radius, space } from '../../../theme/theme';
 
+/** Shows the trip this bill belongs to, or lets the user put it into one. */
+function TripCard({ billId, tripId }: { billId: string; tripId?: string }) {
+  const { trips, updateBill } = useStore();
+  const { c } = useTheme();
+  const trip = trips.find((t) => t.id === tripId);
+  if (trip) {
+    return (
+      <Card onPress={() => router.push(`/trip/${trip.id}`)} accessibilityLabel={`Part of the trip ${trip.name}`}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), backgroundColor: c.primarySoft, borderColor: c.primarySoft }}>
+        <Icon name="trip" color={c.primary} />
+        <View style={{ flex: 1 }}>
+          <T v="bodyStrong" color={c.primary}>Part of {trip.name}</T>
+          <T v="small" muted>Settle once for the whole trip instead of per bill</T>
+        </View>
+        <Icon name="chevronRight" color={c.primary} />
+      </Card>
+    );
+  }
+  if (!trips.length) return null;
+  return (
+    <Row gap={2} style={{ flexWrap: 'wrap' }}>
+      <T v="small" muted>Add to a trip:</T>
+      {trips.slice(0, 3).map((t) => <Btn key={t.id} title={t.name} icon="trip" small variant="secondary" onPress={() => updateBill(billId, (d) => { d.tripId = t.id; })} />)}
+    </Row>
+  );
+}
+
 export default function Summary() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { bill, update } = useBill(id);
@@ -115,8 +142,10 @@ export default function Summary() {
         <ShareTile icon="qr" label="QR & link" onPress={() => router.push(`/bill/${bill.id}/share`)} />
         <ShareTile icon="download" label={busy === 'pdf' ? 'Creating…' : 'PDF'} onPress={pdf} />
         <ShareTile icon="copy" label="Copy all" onPress={() => copy(wholeBillText(bill, computed, bill.share?.url), 'Summary')} />
-        <ShareTile icon="share" label="Image" onPress={() => router.push(`/bill/${bill.id}/image`)} />
+        <ShareTile icon="image" label="Image" onPress={() => router.push(`/bill/${bill.id}/image`)} />
       </View>
+
+      <TripCard billId={bill.id} tripId={bill.tripId} />
 
       {settlement.transfers.length ? (
         <>

@@ -24,6 +24,7 @@ export default function TabsLayout() {
       }}>
       <Tabs.Screen name="index" options={{ ...tab('Home', 'home'), headerShown: false }} />
       <Tabs.Screen name="bills" options={tab('My Bills', 'receipt')} />
+      <Tabs.Screen name="trips" options={tab('Trips', 'trip')} />
       <Tabs.Screen name="groups" options={tab('Groups', 'users')} />
       <Tabs.Screen name="profile" options={tab('Profile', 'user')} />
     </Tabs>

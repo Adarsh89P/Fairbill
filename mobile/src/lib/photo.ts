@@ -27,8 +27,19 @@ export async function pickBillPhoto(source: 'camera' | 'library'): Promise<Photo
 async function prepare(p: Photo): Promise<Photo> {
   const MAX = 2200; // long edge; plenty for receipt text
   const long = Math.max(p.width, p.height);
-  // Re-encoding a small photo only adds JPEG artifacts that hurt OCR; send it untouched.
-  if (!long || long <= MAX) return p;
+  // Re-encoding a small photo only adds JPEG artifacts that hurt OCR; send it untouched on the web.
+  // On phones, photos can carry an EXIF rotation that the server ignores, so bake it into the pixels
+  // (otherwise the highlighted areas on the photo would point at the wrong place).
+  if (!long || (long <= MAX && Platform.OS === 'web')) return p;
+  if (long <= MAX) {
+    try {
+      const ref = await ImageManipulator.manipulate(p.uri).renderAsync();
+      const out = await ref.saveAsync({ compress: 0.95, format: SaveFormat.JPEG });
+      return { uri: out.uri, mimeType: 'image/jpeg', width: out.width, height: out.height };
+    } catch {
+      return p;
+    }
+  }
   try {
     const ctx = p.width >= p.height ? ImageManipulator.manipulate(p.uri).resize({ width: MAX }) : ImageManipulator.manipulate(p.uri).resize({ height: MAX });
     const ref = await ctx.renderAsync();

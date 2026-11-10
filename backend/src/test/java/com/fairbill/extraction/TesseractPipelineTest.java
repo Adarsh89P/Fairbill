@@ -88,9 +88,30 @@ public class TesseractPipelineTest {
 
     @Test
     void handlesRotatedPhoto() throws Exception {
-        ExtractionResult r = service.extract(Images.png(Images.rotate(render(RECEIPT), 90)));
+        BufferedImage upright = render(RECEIPT);
+        ExtractionResult r = service.extract(Images.png(Images.rotate(upright, 90)));
         assertThat(r.total().value()).isEqualTo("945.00");
         assertThat(r.items()).hasSize(3);
+        // Boxes point at the photo as sent (rotated), not at the corrected image the OCR read.
+        var straight = service.extract(Images.png(upright)).total().box();
+        var b = r.total().box();
+        int H = upright.getHeight();
+        assertThat(b.x()).isCloseTo(H - straight.bottom(), org.assertj.core.data.Offset.offset(15));
+        assertThat(b.y()).isCloseTo(straight.x(), org.assertj.core.data.Offset.offset(15));
+        assertThat(b.width()).isCloseTo(straight.height(), org.assertj.core.data.Offset.offset(15));
+    }
+
+    @Test
+    void mapsBoxesBackThroughScaleAndRotation() {
+        var box = new com.fairbill.extraction.model.BoundingBox(10, 20, 30, 40);
+        // identity
+        assertThat(com.fairbill.extraction.ocr.TesseractOcrEngine.toInput(box, 0, 100, 200, 1.0)).isEqualTo(box);
+        // scaled 2x, no rotation
+        assertThat(com.fairbill.extraction.ocr.TesseractOcrEngine.toInput(box, 0, 100, 200, 2.0))
+                .isEqualTo(new com.fairbill.extraction.model.BoundingBox(5, 10, 15, 20));
+        // 180 degrees inside a 100x200 image
+        assertThat(com.fairbill.extraction.ocr.TesseractOcrEngine.toInput(box, 180, 100, 200, 1.0))
+                .isEqualTo(new com.fairbill.extraction.model.BoundingBox(60, 140, 30, 40));
     }
 
     @Test

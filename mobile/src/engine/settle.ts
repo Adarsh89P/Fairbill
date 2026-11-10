@@ -27,6 +27,29 @@ export interface Settlement {
 }
 
 /**
+ * Greedy settlement over net balances (positive = should receive). Largest debtor pays largest
+ * creditor; at most n-1 transfers, and exactly the amounts owed move. Ties break by id so the
+ * result is stable.
+ */
+export function greedyTransfers(nets: Record<string, Minor>): { from: string; to: string; amount: Minor }[] {
+  const order = (a: { left: number; id: string }, b: { left: number; id: string }) => b.left - a.left || a.id.localeCompare(b.id);
+  const debtors = Object.entries(nets).filter(([, v]) => v < 0).map(([id, v]) => ({ id, left: -v })).sort(order);
+  const creditors = Object.entries(nets).filter(([, v]) => v > 0).map(([id, v]) => ({ id, left: v })).sort(order);
+  const out: { from: string; to: string; amount: Minor }[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const amount = Math.min(debtors[i].left, creditors[j].left);
+    if (amount > 0) out.push({ from: debtors[i].id, to: creditors[j].id, amount });
+    debtors[i].left -= amount;
+    creditors[j].left -= amount;
+    if (debtors[i].left === 0) i++;
+    if (creditors[j].left === 0) j++;
+  }
+  return out;
+}
+
+/**
  * Greedy settlement: largest debtor pays largest creditor until everyone is
  * square. Produces at most n-1 transfers and moves exactly the amounts owed.
  */
@@ -48,24 +71,10 @@ export function settle(bill: Bill, split: SplitResult): Settlement {
 
   const transfers: Transfer[] = [];
   if (issues.length === 0) {
-    const debtors = balances.filter((b) => b.net < 0).map((b) => ({ id: b.participantId, left: -b.net }));
-    const creditors = balances.filter((b) => b.net > 0).map((b) => ({ id: b.participantId, left: b.net }));
-    const order = (a: { left: number; id: string }, b: { left: number; id: string }) =>
-      b.left - a.left || a.id.localeCompare(b.id);
-    debtors.sort(order);
-    creditors.sort(order);
-    let i = 0;
-    let j = 0;
-    while (i < debtors.length && j < creditors.length) {
-      const amount = Math.min(debtors[i].left, creditors[j].left);
-      if (amount > 0) {
-        const key = `${debtors[i].id}->${creditors[j].id}`;
-        transfers.push({ key, from: debtors[i].id, to: creditors[j].id, amount, settled: !!bill.settled[key] });
-      }
-      debtors[i].left -= amount;
-      creditors[j].left -= amount;
-      if (debtors[i].left === 0) i++;
-      if (creditors[j].left === 0) j++;
+    const nets = Object.fromEntries(balances.map((b) => [b.participantId, b.net]));
+    for (const t of greedyTransfers(nets)) {
+      const key = `${t.from}->${t.to}`;
+      transfers.push({ key, ...t, settled: !!bill.settled[key] });
     }
     for (const t of transfers) {
       if (t.settled) continue;

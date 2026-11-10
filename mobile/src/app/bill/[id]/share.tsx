@@ -3,7 +3,8 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Share, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { api, ApiError } from '../../../api/client';
+import { api, ApiError, ShareView } from '../../../api/client';
+import { SharePhotoToggle, syncSharePhoto } from '../../../components/SharePhotoToggle';
 import { Banner, Btn, Card, Empty, Field, Row, Screen, T } from '../../../components/ui';
 import { compute, fmt, nameOf, snapshot } from '../../../lib/billText';
 import { notify } from '../../../lib/confirm';
@@ -21,6 +22,7 @@ export default function ShareBill() {
   const [myName, setMyName] = useState('');
   const { c } = useTheme();
   const [state, setState] = useState<{ loading: boolean; error?: string; paid: string[] }>({ loading: true, paid: [] });
+  const [view, setView] = useState<ShareView | null>(null);
   const computed = useMemo(() => (bill ? compute(bill) : null), [bill]);
 
   const publish = useCallback(async () => {
@@ -32,7 +34,9 @@ export default function ShareBill() {
     setState((s) => ({ ...s, loading: true, error: undefined }));
     const run = async () => {
       const s = await ensureSession();
-      return api(settings.apiUrl, s.token).publishShare(bill.id, snapshot(bill, computed));
+      const v = await api(settings.apiUrl, s.token).publishShare(bill.id, snapshot(bill, computed));
+      // The link works without the photo, so a failed upload doesn't block sharing.
+      return syncSharePhoto(settings.apiUrl, s.token, bill, v, settings.sharePhoto && !!bill.receiptImageUri).catch(() => v);
     };
     try {
       let view;
@@ -44,7 +48,8 @@ export default function ShareBill() {
           view = await run();
         } else throw e;
       }
-      update((d) => { d.share = { token: view.token, url: view.url }; });
+      update((d) => { d.share = { token: view.token, url: view.url, phase: 'final', photo: view.hasPhoto }; });
+      setView(view);
       setState({ loading: false, paid: Object.keys(view.paid) });
     } catch (e) {
       setState({ loading: false, paid: [], error: e instanceof ApiError ? e.message : 'Could not create a share link.' });
@@ -96,7 +101,7 @@ export default function ShareBill() {
               <QRCode value={url} size={220} color="#0E1E16" backgroundColor="#FFFFFF" />
             </View>
             <T v="small" muted style={{ textAlign: 'center' }}>Friends can view the breakdown and mark their payment — no app or sign-up needed.</T>
-            <T v="small" selectable style={{ textAlign: 'center' }}>{url}</T>
+            <T v="small" selectable style={{ textAlign: 'center', wordBreak: 'break-all' } as object}>{url}</T>
           </Card>
           <Row gap={2}>
             <Btn title="Copy link" icon="copy" variant="secondary" style={{ flex: 1 }} onPress={async () => { await Clipboard.setStringAsync(url); notify('Link copied'); }} />
@@ -110,6 +115,7 @@ export default function ShareBill() {
               </T>
             </Row>
           ))}
+          <SharePhotoToggle bill={bill} view={view} onView={setView} />
           <Btn title="Refresh payment status" icon="refresh" variant="ghost" onPress={publish} />
         </>
       ) : null}

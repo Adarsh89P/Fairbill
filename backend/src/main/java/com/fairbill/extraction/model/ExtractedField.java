@@ -30,6 +30,10 @@ public record ExtractedField<T>(T value, double confidence, FieldStatus status, 
         return new ExtractedField<>(value, confidence, FieldStatus.verify, text, box, reason);
     }
 
+    public ExtractedField<T> mapBox(java.util.function.UnaryOperator<BoundingBox> f) {
+        return box == null ? this : new ExtractedField<>(value, confidence, status, text, f.apply(box), note);
+    }
+
     @JsonIgnore
     public boolean isMissing() {
         return status == FieldStatus.missing || value == null;

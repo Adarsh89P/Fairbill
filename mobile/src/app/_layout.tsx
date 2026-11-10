@@ -39,6 +39,10 @@ function Navigator() {
         <Stack.Screen name="bill/[id]/assign" options={{ title: 'Who had what?' }} />
         <Stack.Screen name="bill/[id]/charges" options={{ title: 'Taxes & charges' }} />
         <Stack.Screen name="bill/[id]/summary" options={{ title: 'Summary' }} />
+        <Stack.Screen name="bill/[id]/bulk" options={{ title: 'Share several items', presentation: 'modal' }} />
+        <Stack.Screen name="bill/[id]/picks" options={{ title: 'Friends pick their items', presentation: 'modal' }} />
+        <Stack.Screen name="trip/[id]" options={{ title: 'Trip' }} />
+        <Stack.Screen name="trip/add" options={{ title: 'Add bills to trip', presentation: 'modal' }} />
         <Stack.Screen name="bill/[id]/contacts" options={{ title: 'Add from contacts', presentation: 'modal' }} />
         <Stack.Screen name="bill/[id]/image" options={{ title: 'Share bill image', presentation: 'modal' }} />
         <Stack.Screen name="bill/[id]/share" options={{ title: 'Share with friends', presentation: 'modal' }} />

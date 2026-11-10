@@ -4,7 +4,7 @@ import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 export type IconName =
   | 'home' | 'receipt' | 'users' | 'user' | 'camera' | 'upload' | 'edit' | 'plus' | 'trash' | 'check'
   | 'alert' | 'x' | 'share' | 'qr' | 'download' | 'copy' | 'star' | 'starFilled' | 'chevronRight'
-  | 'chevronLeft' | 'percent' | 'refresh' | 'help' | 'chart' | 'lock' | 'whatsapp' | 'wallet' | 'search';
+  | 'chevronLeft' | 'percent' | 'refresh' | 'help' | 'chart' | 'lock' | 'whatsapp' | 'wallet' | 'search' | 'trip' | 'image';
 
 interface Props {
   name: IconName;
@@ -72,6 +72,10 @@ export function Icon({ name, size = 22, color, strokeWidth = 2 }: Props) {
         return <><Path {...p} d="M4 20l1.3-4A8.5 8.5 0 1 1 8.4 19z" /><Path {...p} d="M9 8.8c.2 2.6 2.6 5 5.2 5.3l1.2-1.3-1.8-.9-.8.8c-1-.4-1.9-1.3-2.4-2.4l.8-.8-.9-1.8z" /></>;
       case 'wallet':
         return <><Rect {...p} x="3" y="6" width="18" height="14" rx="2.5" /><Path {...p} d="M16 13h2.5" /><Path {...p} d="M5 6 15.5 3.5 17 6" /></>;
+      case 'trip':
+        return <><Path {...p} d="M4 8h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><Path {...p} d="M9 8V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V8" /><Line {...p} x1="8" y1="8" x2="8" y2="20" /><Line {...p} x1="16" y1="8" x2="16" y2="20" /></>;
+      case 'image':
+        return <><Path {...p} d="M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" /><Circle {...p} cx="9" cy="9.5" r="1.8" /><Path {...p} d="m21 16-5-5-9 9" /></>;
       case 'search':
         return <><Circle {...p} cx="11" cy="11" r="6.5" /><Line {...p} x1="16" y1="16" x2="20.5" y2="20.5" /></>;
     }

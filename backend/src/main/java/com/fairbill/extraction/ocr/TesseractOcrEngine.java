@@ -57,7 +57,9 @@ public class TesseractOcrEngine implements OcrEngine {
         Path tmp = null;
         try {
             BufferedImage image = input.getWidth() < 1400 ? Images.scaleToWidth(input, 1800) : input;
+            double scale = (double) image.getWidth() / input.getWidth();
             image = Images.toGray(image);
+            int scaledW = image.getWidth(), scaledH = image.getHeight();
             tmp = Files.createTempFile("receipt", ".png");
             Files.write(tmp, Images.png(image));
 
@@ -68,12 +70,32 @@ public class TesseractOcrEngine implements OcrEngine {
             }
             String tsv = run(List.of(binary, tmp.toString(), "stdout", "-l", languages, "--psm", "4", "tsv"), 90);
             List<OcrWord> words = parseTsv(tsv);
-            return new OcrResult(name(), image.getWidth(), image.getHeight(), LineAssembler.assemble(words));
+            final int rot = rotation;
+            return new OcrResult(name(), image.getWidth(), image.getHeight(), LineAssembler.assemble(words),
+                    b -> toInput(b, rot, scaledW, scaledH, scale));
         } catch (IOException e) {
             throw new OcrException("Tesseract failed: " + e.getMessage(), e);
         } finally {
             if (tmp != null) try { Files.deleteIfExists(tmp); } catch (IOException ignored) { }
         }
+    }
+
+    /**
+     * Maps a box from the processed image (scaled, then rotated clockwise by {@code rotation}) back to the
+     * input image. {@code w}/{@code h} are the scaled image's size before rotation.
+     */
+    public static BoundingBox toInput(BoundingBox b, int rotation, int w, int h, double scale) {
+        int x1 = b.x(), y1 = b.y(), x2 = b.right(), y2 = b.bottom();
+        int ax, ay, bx, by;
+        switch (((rotation % 360) + 360) % 360) {
+            case 90 -> { ax = y1; ay = h - x2; bx = y2; by = h - x1; }
+            case 180 -> { ax = w - x2; ay = h - y2; bx = w - x1; by = h - y1; }
+            case 270 -> { ax = w - y2; ay = x1; bx = w - y1; by = x2; }
+            default -> { ax = x1; ay = y1; bx = x2; by = y2; }
+        }
+        int x = (int) Math.floor(Math.min(ax, bx) / scale), y = (int) Math.floor(Math.min(ay, by) / scale);
+        int r = (int) Math.ceil(Math.max(ax, bx) / scale), btm = (int) Math.ceil(Math.max(ay, by) / scale);
+        return new BoundingBox(x, y, Math.max(1, r - x), Math.max(1, btm - y));
     }
 
     /** Uses Tesseract orientation detection; returns clockwise degrees needed to make text upright. */

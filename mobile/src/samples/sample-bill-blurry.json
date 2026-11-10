@@ -1,1 +1,315 @@
-{"engine":"tesseract","imageQuality":{"acceptable":false,"width":610,"height":900,"sharpness":8.5,"brightness":236.6,"issues":["BLURRY"]},"restaurantName":{"value":"SPICE GARDEN RESTAURANT","confidence":0.95,"status":"ok","text":"SPICE GARDEN RESTAURANT","box":{"x":373,"y":193,"width":1142,"height":73},"note":null},"billNumber":{"value":null,"confidence":0.0,"status":"missing","text":null,"box":null,"note":"Bill number not detected"},"billDate":{"value":null,"confidence":0.0,"status":"missing","text":null,"box":null,"note":"Bill date not detected"},"subtotal":{"value":"0.00","confidence":0.141,"status":"verify","text":"00","box":{"x":1357,"y":1289,"width":71,"height":54},"note":"Does not match the sum of items"},"total":{"value":"0.00","confidence":0.821,"status":"verify","text":"00","box":{"x":1347,"y":1678,"width":81,"height":55},"note":"Does not match subtotal + charges"},"items":[{"name":{"value":"Chicken Biryeni","confidence":0.531,"status":"verify","text":"Chicken Biryeni","box":{"x":177,"y":899,"width":1329,"height":66},"note":"Low OCR confidence (53%)"},"quantity":{"value":2,"confidence":0.96,"status":"ok","text":"2","box":{"x":845,"y":899,"width":33,"height":56},"note":null},"unitPrice":{"value":"258.00","confidence":0.756,"status":"verify","text":"258.00","box":{"x":962,"y":899,"width":232,"height":56},"note":"Low OCR confidence (76%)"},"amount":{"value":"566.00","confidence":0.716,"status":"verify","text":"566.00","box":{"x":1273,"y":899,"width":233,"height":55},"note":"Quantity × rate (516.00) does not match the amount"},"discount":null,"lineText":"Chicken Biryeni 2 258.00 566.00"},{"name":{"value":"Paneer Tikke","confidence":0.566,"status":"verify","text":"Paneer Tikke","box":{"x":178,"y":996,"width":1328,"height":56},"note":"Low OCR confidence (57%)"},"quantity":{"value":1,"confidence":0.889,"status":"ok","text":"1","box":{"x":850,"y":997,"width":26,"height":55},"note":null},"unitPrice":{"value":"396.00","confidence":0.446,"status":"verify","text":"396.00","box":{"x":965,"y":996,"width":229,"height":56},"note":"Low OCR confidence (45%)"},"amount":{"value":"306.00","confidence":0.699,"status":"verify","text":"306.00","box":{"x":1277,"y":996,"width":229,"height":56},"note":"Quantity × rate (396.00) does not match the amount"},"discount":null,"lineText":"Paneer Tikke 1 396.00 306.00"},{"name":{"value":"Cold Drink","confidence":0.553,"status":"verify","text":"Cold Drink","box":{"x":177,"y":1093,"width":1329,"height":57},"note":"Low OCR confidence (55%)"},"quantity":{"value":2,"confidence":0.917,"status":"ok","text":"2","box":{"x":845,"y":1094,"width":33,"height":56},"note":null},"unitPrice":{"value":"3.00","confidence":0.656,"status":"verify","text":"3.0","box":{"x":1000,"y":1094,"width":194,"height":55},"note":"Low OCR confidence (66%)"},"amount":{"value":"106.00","confidence":0.678,"status":"verify","text":"106.00","box":{"x":1279,"y":1094,"width":227,"height":56},"note":"Quantity × rate (6.00) does not match the amount"},"discount":null,"lineText":"Cold Drink 2 3.0 106.00"}],"charges":[{"kind":"SGST","label":"SGST","amount":{"value":"272.80","confidence":0.678,"status":"verify","text":"272.8","box":{"x":1235,"y":1483,"width":193,"height":56},"note":"Low OCR confidence (68%)"},"rate":null},{"kind":"SERVICE","label":"Service Charge","amount":{"value":"45.00","confidence":0.834,"status":"verify","text":"45.00","box":{"x":1233,"y":1581,"width":195,"height":55},"note":"Low OCR confidence (83%)"},"rate":null}],"missingFields":["billNumber","billDate"],"uncertainFields":["items[0].name","items[0].amount","items[1].name","items[1].amount","items[2].name","items[2].amount","charges[0].amount","charges[1].amount","subtotal","total"],"warnings":[{"code":"IMAGE_BLURRY","message":"The uploaded image is blurry. Some values may be misread — retake the photo if possible.","field":null},{"code":"UNRECOGNISED_LINES","message":"Some lines near the totals were not recognised: cost 2.\" 272.8. Add them as charges if needed.","field":"charges"},{"code":"SUBTOTAL_MISMATCH","message":"Items add up to ₹978.00 but the subtotal reads ₹0.00. An item may be missing or misread.","field":"subtotal"},{"code":"TOTAL_MISMATCH","message":"Subtotal and charges add up to ₹317.80 but the final amount reads ₹0.00. Please check the totals.","field":"total"}],"receiptId":null}
+{
+  "engine": "tesseract",
+  "imageQuality": {
+    "acceptable": false,
+    "width": 610,
+    "height": 900,
+    "sharpness": 8.5,
+    "brightness": 236.6,
+    "issues": [
+      "BLURRY"
+    ]
+  },
+  "restaurantName": {
+    "value": "SPICE GARDEN RESTAURANT",
+    "confidence": 0.95,
+    "status": "ok",
+    "text": "SPICE GARDEN RESTAURANT",
+    "box": {
+      "x": 126,
+      "y": 65,
+      "width": 388,
+      "height": 26
+    },
+    "note": null
+  },
+  "billNumber": {
+    "value": null,
+    "confidence": 0.0,
+    "status": "missing",
+    "text": null,
+    "box": null,
+    "note": "Bill number not detected"
+  },
+  "billDate": {
+    "value": null,
+    "confidence": 0.0,
+    "status": "missing",
+    "text": null,
+    "box": null,
+    "note": "Bill date not detected"
+  },
+  "subtotal": {
+    "value": "0.00",
+    "confidence": 0.141,
+    "status": "verify",
+    "text": "00",
+    "box": {
+      "x": 459,
+      "y": 436,
+      "width": 25,
+      "height": 20
+    },
+    "note": "Does not match the sum of items"
+  },
+  "total": {
+    "value": "0.00",
+    "confidence": 0.821,
+    "status": "verify",
+    "text": "00",
+    "box": {
+      "x": 456,
+      "y": 568,
+      "width": 28,
+      "height": 20
+    },
+    "note": "Does not match subtotal + charges"
+  },
+  "items": [
+    {
+      "name": {
+        "value": "Chicken Biryeni",
+        "confidence": 0.531,
+        "status": "verify",
+        "text": "Chicken Biryeni",
+        "box": {
+          "x": 59,
+          "y": 304,
+          "width": 452,
+          "height": 24
+        },
+        "note": "Low OCR confidence (53%)"
+      },
+      "quantity": {
+        "value": 2,
+        "confidence": 0.96,
+        "status": "ok",
+        "text": "2",
+        "box": {
+          "x": 286,
+          "y": 304,
+          "width": 12,
+          "height": 20
+        },
+        "note": null
+      },
+      "unitPrice": {
+        "value": "258.00",
+        "confidence": 0.756,
+        "status": "verify",
+        "text": "258.00",
+        "box": {
+          "x": 326,
+          "y": 304,
+          "width": 79,
+          "height": 20
+        },
+        "note": "Low OCR confidence (76%)"
+      },
+      "amount": {
+        "value": "566.00",
+        "confidence": 0.716,
+        "status": "verify",
+        "text": "566.00",
+        "box": {
+          "x": 431,
+          "y": 304,
+          "width": 80,
+          "height": 20
+        },
+        "note": "Quantity × rate (516.00) does not match the amount"
+      },
+      "discount": null,
+      "lineText": "Chicken Biryeni 2 258.00 566.00"
+    },
+    {
+      "name": {
+        "value": "Paneer Tikke",
+        "confidence": 0.566,
+        "status": "verify",
+        "text": "Paneer Tikke",
+        "box": {
+          "x": 60,
+          "y": 337,
+          "width": 451,
+          "height": 20
+        },
+        "note": "Low OCR confidence (57%)"
+      },
+      "quantity": {
+        "value": 1,
+        "confidence": 0.889,
+        "status": "ok",
+        "text": "1",
+        "box": {
+          "x": 288,
+          "y": 337,
+          "width": 9,
+          "height": 20
+        },
+        "note": null
+      },
+      "unitPrice": {
+        "value": "396.00",
+        "confidence": 0.446,
+        "status": "verify",
+        "text": "396.00",
+        "box": {
+          "x": 327,
+          "y": 337,
+          "width": 78,
+          "height": 20
+        },
+        "note": "Low OCR confidence (45%)"
+      },
+      "amount": {
+        "value": "306.00",
+        "confidence": 0.699,
+        "status": "verify",
+        "text": "306.00",
+        "box": {
+          "x": 432,
+          "y": 337,
+          "width": 79,
+          "height": 20
+        },
+        "note": "Quantity × rate (396.00) does not match the amount"
+      },
+      "discount": null,
+      "lineText": "Paneer Tikke 1 396.00 306.00"
+    },
+    {
+      "name": {
+        "value": "Cold Drink",
+        "confidence": 0.553,
+        "status": "verify",
+        "text": "Cold Drink",
+        "box": {
+          "x": 59,
+          "y": 370,
+          "width": 452,
+          "height": 20
+        },
+        "note": "Low OCR confidence (55%)"
+      },
+      "quantity": {
+        "value": 2,
+        "confidence": 0.917,
+        "status": "ok",
+        "text": "2",
+        "box": {
+          "x": 286,
+          "y": 370,
+          "width": 12,
+          "height": 20
+        },
+        "note": null
+      },
+      "unitPrice": {
+        "value": "3.00",
+        "confidence": 0.656,
+        "status": "verify",
+        "text": "3.0",
+        "box": {
+          "x": 338,
+          "y": 370,
+          "width": 67,
+          "height": 20
+        },
+        "note": "Low OCR confidence (66%)"
+      },
+      "amount": {
+        "value": "106.00",
+        "confidence": 0.678,
+        "status": "verify",
+        "text": "106.00",
+        "box": {
+          "x": 433,
+          "y": 370,
+          "width": 78,
+          "height": 20
+        },
+        "note": "Quantity × rate (6.00) does not match the amount"
+      },
+      "discount": null,
+      "lineText": "Cold Drink 2 3.0 106.00"
+    }
+  ],
+  "charges": [
+    {
+      "kind": "SGST",
+      "label": "SGST",
+      "amount": {
+        "value": "272.80",
+        "confidence": 0.678,
+        "status": "verify",
+        "text": "272.8",
+        "box": {
+          "x": 418,
+          "y": 502,
+          "width": 66,
+          "height": 20
+        },
+        "note": "Low OCR confidence (68%)"
+      },
+      "rate": null
+    },
+    {
+      "kind": "SERVICE",
+      "label": "Service Charge",
+      "amount": {
+        "value": "45.00",
+        "confidence": 0.834,
+        "status": "verify",
+        "text": "45.00",
+        "box": {
+          "x": 417,
+          "y": 535,
+          "width": 67,
+          "height": 20
+        },
+        "note": "Low OCR confidence (83%)"
+      },
+      "rate": null
+    }
+  ],
+  "missingFields": [
+    "billNumber",
+    "billDate"
+  ],
+  "uncertainFields": [
+    "items[0].name",
+    "items[0].amount",
+    "items[1].name",
+    "items[1].amount",
+    "items[2].name",
+    "items[2].amount",
+    "charges[0].amount",
+    "charges[1].amount",
+    "subtotal",
+    "total"
+  ],
+  "warnings": [
+    {
+      "code": "IMAGE_BLURRY",
+      "message": "The uploaded image is blurry. Some values may be misread — retake the photo if possible.",
+      "field": null
+    },
+    {
+      "code": "UNRECOGNISED_LINES",
+      "message": "Some lines near the totals were not recognised: cost 2.\" 272.8. Add them as charges if needed.",
+      "field": "charges"
+    },
+    {
+      "code": "SUBTOTAL_MISMATCH",
+      "message": "Items add up to ₹978.00 but the subtotal reads ₹0.00. An item may be missing or misread.",
+      "field": "subtotal"
+    },
+    {
+      "code": "TOTAL_MISMATCH",
+      "message": "Subtotal and charges add up to ₹317.80 but the final amount reads ₹0.00. Please check the totals.",
+      "field": "total"
+    }
+  ],
+  "receiptId": null
+}

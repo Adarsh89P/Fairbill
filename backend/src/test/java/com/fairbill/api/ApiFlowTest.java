@@ -101,4 +101,66 @@ class ApiFlowTest {
         // other users cannot read the owner's share status
         mvc.perform(get("/api/shares/" + token).header("Authorization", "Bearer " + anonToken())).andExpect(status().isNotFound());
     }
+
+    @Test
+    void friendsPickTheirItemsThenSeeTheFinalSplitOnTheSameLink() throws Exception {
+        String auth = "Bearer " + anonToken();
+        String claim = "{\"billId\":\"bill_9\",\"claim\":{\"restaurant\":\"Spice Garden\",\"currency\":\"INR\","
+                + "\"items\":[{\"id\":\"i1\",\"name\":\"Biryani\",\"amount\":50000,\"quantity\":1},{\"id\":\"i2\",\"name\":\"Beer <b>\",\"amount\":60000,\"quantity\":2}],"
+                + "\"people\":[{\"id\":\"a\",\"name\":\"Adarsh\"},{\"id\":\"r\",\"name\":\"Rahul\"}]}}";
+        JsonNode v = mapper.readTree(mvc.perform(post("/api/shares/picking").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON).content(claim))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.phase").value("picking")).andReturn().getResponse().getContentAsString());
+        String token = v.path("token").asText();
+
+        String html = mvc.perform(get("/s/" + token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(html).contains("What did you have?", "Rahul").doesNotContain("Beer <b>");
+
+        // a listed friend picks; unknown items and unknown people are refused
+        mvc.perform(put("/api/public/shares/" + token + "/picks/r").contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[\"i1\",\"i2\"]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.picks.r[1]").value("i2"));
+        mvc.perform(put("/api/public/shares/" + token + "/picks/r").contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[\"nope\"]}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/public/shares/" + token + "/picks/zz").contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[]}"))
+                .andExpect(status().isNotFound());
+
+        // someone not on the list adds themselves; adding the same name again returns the same person
+        JsonNode joined = mapper.readTree(mvc.perform(post("/api/public/shares/" + token + "/guests").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"  Priya \"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        String priya = joined.path("participantId").asText();
+        assertThat(priya).startsWith("g_");
+        mvc.perform(post("/api/public/shares/" + token + "/guests").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"priya\"}"))
+                .andExpect(jsonPath("$.participantId").value(priya));
+        mvc.perform(put("/api/public/shares/" + token + "/picks/" + priya).contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[\"i2\"]}"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/shares/" + token).header("Authorization", auth))
+                .andExpect(jsonPath("$.claim.people[2].name").value("Priya")).andExpect(jsonPath("$.claim.people[2].guest").value(true))
+                .andExpect(jsonPath("$.picks." + priya + "[0]").value("i2"));
+
+        // bill photo: must be a real image; stored re-encoded as JPEG and visible to guests
+        mvc.perform(multipart("/api/shares/" + token + "/photo").file(new MockMultipartFile("image", "x.jpg", "image/jpeg", new byte[]{1, 2, 3}))
+                .with(r -> { r.setMethod("PUT"); return r; }).header("Authorization", auth)).andExpect(status().isBadRequest());
+        byte[] png = Images.png(TesseractPipelineTest.render(TesseractPipelineTest.RECEIPT));
+        mvc.perform(multipart("/api/shares/" + token + "/photo").file(new MockMultipartFile("image", "bill.png", "image/png", png))
+                .with(r -> { r.setMethod("PUT"); return r; }).header("Authorization", auth)).andExpect(jsonPath("$.hasPhoto").value(true));
+        byte[] served = mvc.perform(get("/api/public/shares/" + token + "/photo")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+        assertThat(served[0] & 0xff).isEqualTo(0xFF);
+        assertThat(served[1] & 0xff).isEqualTo(0xD8); // JPEG
+        // only the owner can attach a photo
+        mvc.perform(multipart("/api/shares/" + token + "/photo").file(new MockMultipartFile("image", "bill.png", "image/png", png))
+                .with(r -> { r.setMethod("PUT"); return r; }).header("Authorization", "Bearer " + anonToken())).andExpect(status().isNotFound());
+
+        // publishing the split closes picking; the same link now shows amounts
+        String fin = "{\"billId\":\"bill_9\",\"bill\":{\"restaurant\":\"Spice Garden\",\"currency\":\"INR\",\"total\":110000,\"people\":["
+                + "{\"id\":\"a\",\"name\":\"Adarsh\",\"total\":0,\"lines\":[]},"
+                + "{\"id\":\"r\",\"name\":\"Rahul\",\"total\":80000,\"lines\":[{\"label\":\"Biryani\",\"amount\":50000},{\"label\":\"Beer\",\"amount\":30000}]},"
+                + "{\"id\":\"" + priya + "\",\"name\":\"Priya\",\"total\":30000,\"lines\":[{\"label\":\"Beer\",\"amount\":30000}]}],"
+                + "\"transfers\":[{\"from\":\"r\",\"to\":\"a\",\"amount\":80000},{\"from\":\"" + priya + "\",\"to\":\"a\",\"amount\":30000}]}}";
+        mvc.perform(post("/api/shares").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON).content(fin))
+                .andExpect(jsonPath("$.token").value(token)).andExpect(jsonPath("$.phase").value("final"));
+        mvc.perform(put("/api/public/shares/" + token + "/picks/r").contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[]}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PICKING_CLOSED"));
+        html = mvc.perform(get("/s/" + token)).andReturn().getResponse().getContentAsString();
+        assertThat(html).contains("Who owes what", "Priya", "Photo of the bill");
+    }
 }

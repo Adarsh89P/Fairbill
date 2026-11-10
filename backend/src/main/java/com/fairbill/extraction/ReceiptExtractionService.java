@@ -64,7 +64,7 @@ public class ReceiptExtractionService {
             log.warn("OCR failed with {}: {}", engine.name(), e.getMessage());
             throw new ExtractionException("OCR_FAILED", "We couldn't read this bill right now. Please try again or enter it manually.");
         }
-        return validator.validate(parser.parse(ocr), quality, engine.name(), ocr.imageHeight());
+        return validator.validate(parser.parse(ocr), quality, engine.name(), ocr.imageHeight()).mapBoxes(ocr.toInput());
     }
 
     public boolean ocrAvailable() {

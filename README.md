@@ -81,8 +81,13 @@ cd backend && mvn test                        # parser, real Tesseract pipeline,
 | GET/PUT/DELETE | `/api/bills`, `/api/bills/{id}` | Bearer — backup/sync |
 | POST | `/api/shares` | Bearer — server re-checks that every person's lines and all shares add up before publishing |
 | GET / POST / DELETE | `/api/shares/{token}`, `/api/shares/{token}/participants/{pid}/paid` | Bearer, owner |
+| POST | `/api/shares/picking` | Bearer — opens (or reopens) the bill's link for friends to tick their items |
+| PUT / DELETE | `/api/shares/{token}/photo` (multipart `image`) | Bearer, owner — photo is downsized and re-encoded as JPEG, so EXIF/GPS is dropped |
 | GET / POST | `/api/public/shares/{token}`, `/api/public/shares/{token}/participants/{pid}/paid` | — guest |
-| GET | `/s/{token}` | — mobile web page for guests (no app, no account) |
+| PUT | `/api/public/shares/{token}/picks/{pid}` (`{"itemIds":[…]}`) | — guest, only while picking is open |
+| POST | `/api/public/shares/{token}/guests` (`{"name":"…"}`) | — guest not on the list adds themselves |
+| GET | `/api/public/shares/{token}/photo` | — guest |
+| GET | `/s/{token}` | — mobile web page for guests (no app, no account). One link per bill: item picking first, the final split once published |
 
 ## Status by phase
 
@@ -96,11 +101,22 @@ cd backend && mvn test                        # parser, real Tesseract pipeline,
 | 6. QR guest sharing & settlement | Done — guest page, "I've paid", synced back to the app |
 | 7. Testing / security / deployment | Partly — see below |
 
+## Features added after the first version
+
+- **Check values on the photo**: the scanner reports where each value sits on the photo (mapped back through its own scaling and rotation). Flagged items, taxes, the total and the date show a zoomed strip of that line with the value outlined; the full photo outlines every value to check.
+- **Friends tick their own items**: from *Who had what?*, send one link; each friend picks what they had (or adds themselves if they weren't listed). Their picks fill in the assignments; shared dishes are split equally between everyone who ticked them. The same link later shows the final split.
+- **Everyone except…**: share several items at once between everybody but the people you tap out.
+- **Trips**: group bills into a trip (new bills join the active trip automatically) and settle up once, with the fewest payments. Friends are matched across bills by phone number, then by name. Unfinished bills and other currencies are listed, not counted.
+- **Bill photo on the shared link**: on by default, switchable per bill; bills entered by hand can attach a photo.
+
 ## Known gaps / next steps
 
 - **Native devices not yet tested**: verified in a phone-sized browser (Expo web). Run on iOS/Android via Expo Go before release.
 - **OCR accuracy on real photos**: Tesseract is fine on clear prints but weaker on crumpled thermal receipts. Use Google Vision in production, and consider an AI-vision fallback for complex layouts (not built yet; the `OcrEngine` interface is the plug-in point).
 - On-device ML Kit isn't used (it needs a custom dev build); OCR runs on the server.
+- Item picking is trust-based too: anyone with the link can tick items for any name on it. The payer reviews picks before using them.
+- Picks for items with quantity > 1 are split equally between the people who ticked them; uneven counts (3 beers vs 1) are adjusted in the app.
+- Trips are stored on the device only (not yet synced to the server).
 - Guest "I've paid" is trust-based (anyone with the link can mark a payment); the owner sees who marked it and can undo it.
 - Rate limiting is in-memory per instance; use a shared store when scaling out.
 - Dockerfile / compose were not built in the dev environment (no Docker daemon).

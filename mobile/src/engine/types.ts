@@ -4,11 +4,21 @@ import type { Minor } from './money';
 export type FieldStatus = 'ok' | 'verify' | 'missing';
 export type Source = 'ocr' | 'manual';
 
+/** A rectangle on the bill photo, in the photo's own pixels. */
+export interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface Tracked<T> {
   value: T | null;
   status: FieldStatus;
   confidence?: number; // 0..1, from OCR
   note?: string; // human readable reason for verify/missing
+  /** Where on the bill photo this value was read from (scanned bills only). */
+  box?: Box;
 }
 
 export interface BillItem {
@@ -119,7 +129,14 @@ export interface Bill {
   /** settlement key `${from}->${to}` -> settled */
   settled: Record<string, boolean>;
   receiptImageUri?: string;
+  /** Pixel size of the photo the scanner read; boxes refer to this. */
+  receiptSize?: { width: number; height: number };
   receiptId?: string;
-  share?: { token: string; url: string };
+  /**
+   * One link per bill. phase "picking": friends tick their items; "final": the split is published.
+   * photo: whether the bill photo is attached to the link.
+   */
+  share?: { token: string; url: string; phase?: 'picking' | 'final'; photo?: boolean };
   groupId?: string;
+  tripId?: string;
 }

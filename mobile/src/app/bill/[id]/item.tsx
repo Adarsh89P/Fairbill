@@ -2,6 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { MoneyField } from '../../../components/MoneyField';
+import { canShowOnPhoto, ReceiptCrop, unionBox } from '../../../components/ReceiptCrop';
 import { Banner, Btn, Card, Empty, Field, Row, Screen, T } from '../../../components/ui';
 import { newItem } from '../../../engine/factory';
 import { currencyFor, formatMoney, Minor } from '../../../engine/money';
@@ -36,10 +37,11 @@ export default function ItemEditor() {
         return n;
       })();
       // Everything saved here was entered or confirmed by the user.
-      target.name = { value: name.trim(), status: 'ok' };
-      target.quantity = q === null ? { value: null, status: 'ok', note: 'Not printed' } : { value: q, status: 'ok' };
-      target.unitPrice = rate === null ? { value: null, status: 'missing' } : { value: rate, status: 'ok' };
-      target.amount = { value: amount, status: 'ok' };
+      // Keep where each value sits on the photo so it can still be shown later.
+      target.name = { value: name.trim(), status: 'ok', box: target.name.box };
+      target.quantity = q === null ? { value: null, status: 'ok', note: 'Not printed', box: target.quantity.box } : { value: q, status: 'ok', box: target.quantity.box };
+      target.unitPrice = rate === null ? { value: null, status: 'missing', box: target.unitPrice.box } : { value: rate, status: 'ok', box: target.unitPrice.box };
+      target.amount = { value: amount, status: 'ok', box: target.amount.box };
       target.discount = discount ?? 0;
     });
     router.back();
@@ -59,6 +61,15 @@ export default function ItemEditor() {
           <Btn title={existing ? 'Save' : 'Add item'} icon="check" disabled={!canSave} onPress={save} style={{ flex: 1 }} />
         </Row>
       }>
+        {existing && canShowOnPhoto(bill, existing.amount.box, existing.name.box) ? (
+          <View style={{ gap: space(1.5) }}>
+            <T v="caption" muted>ON THE BILL</T>
+            <ReceiptCrop bill={bill} maxHeight={150} label={existing.name.value ?? 'this item'}
+              line={unionBox(existing.name.box, existing.quantity.box, existing.unitPrice.box, existing.amount.box)}
+              focus={[existing.amount, existing.name, existing.quantity].find((f) => f.status !== 'ok' && f.box)?.box}
+              tone={existing.amount.status === 'missing' ? 'missing' : 'verify'} />
+          </View>
+        ) : null}
         {issues.map((n) => <Banner key={n} tone="warning">{n}</Banner>)}
         {existing?.source === 'ocr' && existing.amount.confidence !== undefined ? (
           <T v="small" muted>Scanned with {Math.round(existing.amount.confidence * 100)}% confidence. Compare with the bill photo before saving.</T>

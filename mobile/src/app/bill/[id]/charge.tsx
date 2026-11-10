@@ -2,6 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { MoneyField } from '../../../components/MoneyField';
+import { canShowOnPhoto, ReceiptCrop } from '../../../components/ReceiptCrop';
 import { Banner, Btn, Card, Chip, Empty, Field, Row, Screen, Segmented, T } from '../../../components/ui';
 import { newCharge } from '../../../engine/factory';
 import type { Minor } from '../../../engine/money';
@@ -37,7 +38,7 @@ export default function ChargeEditor() {
       }
       ch.kind = kind;
       ch.label = label.trim() || CHARGE_LABELS[kind];
-      ch.amount = { value: signed, status: 'ok' };
+      ch.amount = { value: signed, status: 'ok', box: ch.amount.box };
     });
     router.back();
   };
@@ -54,6 +55,12 @@ export default function ChargeEditor() {
           <Btn title={existing ? 'Save' : 'Add'} icon="check" disabled={amount === null} onPress={save} style={{ flex: 1 }} />
         </Row>
       }>
+        {existing && canShowOnPhoto(bill, existing.amount.box) ? (
+          <View style={{ gap: space(1.5) }}>
+            <T v="caption" muted>ON THE BILL</T>
+            <ReceiptCrop bill={bill} focus={existing.amount.box} maxHeight={150} label={existing.label} tone={existing.amount.status === 'missing' ? 'missing' : 'verify'} />
+          </View>
+        ) : null}
         {existing?.amount.status === 'verify' && existing.amount.note ? <Banner tone="warning">{existing.amount.note}</Banner> : null}
         <Card style={{ gap: space(3) }}>
           <T v="caption" muted>TYPE</T>

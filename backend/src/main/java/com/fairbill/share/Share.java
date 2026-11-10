@@ -13,18 +13,18 @@ public class Share {
     @Id private String token;
     @Column(name = "owner_id", nullable = false) private UUID ownerId;
     @Column(name = "bill_client_id", nullable = false) private String billClientId;
-    @Column(nullable = false, columnDefinition = "TEXT") private String snapshot;
+    @Column(columnDefinition = "TEXT") private String snapshot;
+    @Column(columnDefinition = "TEXT") private String claim;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "expires_at", nullable = false) private Instant expiresAt;
     @Column(nullable = false) private boolean revoked;
 
     protected Share() {}
 
-    public Share(String token, UUID ownerId, String billClientId, String snapshot, Instant expiresAt) {
+    public Share(String token, UUID ownerId, String billClientId, Instant expiresAt) {
         this.token = token;
         this.ownerId = ownerId;
         this.billClientId = billClientId;
-        this.snapshot = snapshot;
         this.createdAt = Instant.now();
         this.expiresAt = expiresAt;
     }
@@ -36,5 +36,7 @@ public class Share {
     public UUID getOwnerId() { return ownerId; }
     public String getBillClientId() { return billClientId; }
     public String getSnapshot() { return snapshot; }
+    public String getClaim() { return claim; }
+    public void setClaim(String c) { this.claim = c; }
     public Instant getExpiresAt() { return expiresAt; }
 }

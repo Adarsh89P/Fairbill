@@ -40,3 +40,14 @@ test('maps extraction without trusting low confidence or inventing values', () =
   expect(b.billNumber.status).toBe('missing');
   expect(b.warnings[0].code).toBe('IMAGE_BLURRY');
 });
+
+test('keeps where each value was read on the photo, so it can be shown for checking', () => {
+  const r = result();
+  r.imageQuality = { ...r.imageQuality, width: 600, height: 900 };
+  r.items[1].amount = { ...r.items[1].amount, box: { x: 400, y: 300, width: 80, height: 20 } };
+  r.total = { ...r.total, box: { x: 0, y: 0, width: 0, height: 10 } }; // degenerate: ignored
+  const b = extractionToBill(r, 'scan');
+  expect(b.receiptSize).toEqual({ width: 600, height: 900 });
+  expect(b.items[1].amount.box).toEqual({ x: 400, y: 300, width: 80, height: 20 });
+  expect(b.total.box).toBeUndefined();
+});

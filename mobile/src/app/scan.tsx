@@ -44,10 +44,11 @@ export default function Scan() {
       }
       const origin = source === 'library' ? 'upload' : 'scan';
       let bill = extractionToBill(result, origin, settings.currency, p.uri);
+      bill.tripId = settings.activeTripId;
       const old = replace ? getBill(replace) : undefined;
       if (old) {
         // Retake: keep the people, replace everything read from the old photo.
-        bill = { ...bill, id: old.id, createdAt: old.createdAt, participants: old.participants, payments: old.payments, groupId: old.groupId };
+        bill = { ...bill, id: old.id, createdAt: old.createdAt, participants: old.participants, payments: old.payments, groupId: old.groupId, tripId: old.tripId };
       }
       saveBill(bill);
       router.replace(`/bill/${bill.id}/review`);
@@ -57,7 +58,7 @@ export default function Scan() {
     } finally {
       clearInterval(ticker);
     }
-  }, [ensureSession, getBill, replace, saveBill, setSession, settings.apiUrl, settings.currency, settings.keepReceipts, source]);
+  }, [ensureSession, getBill, replace, saveBill, setSession, settings.apiUrl, settings.currency, settings.keepReceipts, settings.activeTripId, source]);
 
   const pick = useCallback(async (src: 'camera' | 'library') => {
     setError(null);
@@ -83,6 +84,7 @@ export default function Scan() {
   const manual = () => {
     const b = newBill('manual', settings.currency);
     if (photo) b.receiptImageUri = photo.uri;
+    b.tripId = settings.activeTripId;
     b.warnings = [{ code: 'MANUAL_FALLBACK', message: 'The bill could not be read automatically. Enter the items from the photo.' }];
     saveBill(b);
     router.replace(`/bill/${b.id}/review`);

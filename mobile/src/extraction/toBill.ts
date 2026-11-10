@@ -1,22 +1,30 @@
 import { currencyFor, Minor, parseMoney } from '../engine/money';
 import { newBill, uid } from '../engine/factory';
-import type { Bill, BillCharge, BillItem, Tracked } from '../engine/types';
+import type { Bill, BillCharge, BillItem, Box, Tracked } from '../engine/types';
 import { CHARGE_LABELS } from '../engine/types';
 import type { ExtractedField, ExtractionResult } from './types';
 
 /** Anything below this is never treated as verified, whatever the server says. */
 export const MIN_VERIFIED_CONFIDENCE = 0.85;
 
+function boxOf(f: ExtractedField<unknown> | null | undefined): Box | undefined {
+  const b = f?.box;
+  if (!b || !(b.width > 0) || !(b.height > 0)) return undefined;
+  return { x: b.x, y: b.y, width: b.width, height: b.height };
+}
+
 function track<T>(f: ExtractedField<T> | null | undefined, parse?: (v: T) => any): Tracked<any> {
+  const box = boxOf(f);
+  const withBox = <X extends object>(t: X) => (box ? { ...t, box } : t);
   if (!f || f.value === null || f.value === undefined || f.status === 'missing') {
-    return { value: null, status: 'missing', note: f?.note ?? undefined, confidence: f?.confidence };
+    return withBox({ value: null, status: 'missing', note: f?.note ?? undefined, confidence: f?.confidence });
   }
   const value = parse ? parse(f.value) : f.value;
   if (value === null || value === undefined) {
-    return { value: null, status: 'missing', note: `Could not read "${f.text ?? f.value}"`, confidence: f.confidence };
+    return withBox({ value: null, status: 'missing', note: `Could not read "${f.text ?? f.value}"`, confidence: f.confidence });
   }
   const status = f.status === 'ok' && f.confidence >= MIN_VERIFIED_CONFIDENCE ? 'ok' : 'verify';
-  return { value, status, confidence: f.confidence, note: f.note ?? undefined };
+  return withBox({ value, status, confidence: f.confidence, note: f.note ?? undefined });
 }
 
 export function extractionToBill(x: ExtractionResult, origin: 'scan' | 'upload', currency = 'INR', imageUri?: string): Bill {
@@ -42,7 +50,7 @@ export function extractionToBill(x: ExtractionResult, origin: 'scan' | 'upload',
   });
   // Quantity is optional on many bills. It is never assumed; the item stays flagged for review.
   for (const it of bill.items) {
-    if (it.quantity.value === null) it.quantity = { value: null, status: 'missing', note: 'Quantity not detected' };
+    if (it.quantity.value === null) it.quantity = { value: null, status: 'missing', note: 'Quantity not detected', box: it.quantity.box };
   }
   bill.charges = x.charges.map<BillCharge>((c) => ({
     id: uid('chg'),
@@ -57,6 +65,7 @@ export function extractionToBill(x: ExtractionResult, origin: 'scan' | 'upload',
   }));
   bill.warnings = x.warnings.map((w) => ({ code: w.code, message: w.message, field: w.field ?? undefined }));
   bill.receiptImageUri = imageUri;
+  if (x.imageQuality?.width > 0 && x.imageQuality?.height > 0) bill.receiptSize = { width: x.imageQuality.width, height: x.imageQuality.height };
   bill.receiptId = x.receiptId ?? undefined;
   return bill;
 }

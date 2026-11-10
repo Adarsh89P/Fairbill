@@ -17,7 +17,9 @@ public record ShareSnapshot(
         @NotNull @Size(min = 1, max = 50) List<@Valid Person> people,
         @NotNull @Size(max = 100) List<@Valid Transfer> transfers) {
 
-    public record Person(@NotBlank @Pattern(regexp = "[A-Za-z0-9_\\-]{1,64}") String id, @NotBlank @Size(max = 80) String name,
+    public static final String ID = "[A-Za-z0-9_\\-]{1,64}";
+
+    public record Person(@NotBlank @Pattern(regexp = ID) String id, @NotBlank @Size(max = 80) String name,
                          @NotNull Long total, @NotNull @Size(max = 300) List<@Valid Line> lines) {}
 
     public record Line(@NotBlank @Size(max = 120) String label, @NotNull Long amount) {}

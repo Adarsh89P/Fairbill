@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Bill } from '../engine/types';
 import { api, Session } from '../api/client';
+import type { Trip } from '../lib/trip';
 
 export interface GroupMember {
   id: string;
@@ -23,13 +24,17 @@ export interface Settings {
   theme: ThemeMode;
   keepReceipts: boolean;
   apiUrl: string;
+  /** Attach the bill photo to shared links so friends can check it. */
+  sharePhoto: boolean;
+  /** New bills join this trip automatically. */
+  activeTripId?: string;
 }
 
 const DEFAULT_API =
   process.env.EXPO_PUBLIC_API_URL ??
   (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
-const DEFAULT_SETTINGS: Settings = { name: 'Me', currency: 'INR', theme: 'system', keepReceipts: false, apiUrl: DEFAULT_API };
-const KEYS = { bills: 'fb.bills.v1', groups: 'fb.groups.v1', settings: 'fb.settings.v1', session: 'fb.session.v1' };
+const DEFAULT_SETTINGS: Settings = { name: 'Me', currency: 'INR', theme: 'system', keepReceipts: false, apiUrl: DEFAULT_API, sharePhoto: true };
+const KEYS = { bills: 'fb.bills.v1', groups: 'fb.groups.v1', settings: 'fb.settings.v1', session: 'fb.session.v1', trips: 'fb.trips.v1' };
 
 interface Store {
   ready: boolean;
@@ -41,6 +46,11 @@ interface Store {
   groups: Group[];
   saveGroup: (g: Group) => void;
   deleteGroup: (id: string) => void;
+  trips: Trip[]; // newest first
+  saveTrip: (t: Trip) => void;
+  updateTrip: (id: string, fn: (draft: Trip) => void) => void;
+  /** Deletes the trip; its bills stay, just no longer grouped. */
+  deleteTrip: (id: string) => void;
   settings: Settings;
   updateSettings: (patch: Partial<Settings>) => void;
   session: Session | null;
@@ -67,6 +77,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [billMap, setBillMap] = useState<Record<string, Bill>>({});
   const [groups, setGroups] = useState<Group[]>([]);
+  const [tripMap, setTripMap] = useState<Record<string, Trip>>({});
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [session, setSessionState] = useState<Session | null>(null);
   const sessionRef = useRef<Session | null>(null);
@@ -77,14 +88,16 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [b, g, s, sess] = await Promise.all([
+      const [b, g, s, sess, t] = await Promise.all([
         load<Record<string, Bill>>(KEYS.bills, {}),
         load<Group[]>(KEYS.groups, []),
         load<Settings>(KEYS.settings, DEFAULT_SETTINGS),
         load<Session | null>(KEYS.session, null),
+        load<Record<string, Trip>>(KEYS.trips, {}),
       ]);
       setBillMap(b);
       setGroups(g);
+      setTripMap(t);
       setSettings({ ...DEFAULT_SETTINGS, ...s });
       setSessionState(sess);
       setReady(true);
@@ -97,6 +110,9 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (ready) AsyncStorage.setItem(KEYS.groups, JSON.stringify(groups)).catch(() => {});
   }, [groups, ready]);
+  useEffect(() => {
+    if (ready) AsyncStorage.setItem(KEYS.trips, JSON.stringify(tripMap)).catch(() => {});
+  }, [tripMap, ready]);
   useEffect(() => {
     if (ready) AsyncStorage.setItem(KEYS.settings, JSON.stringify(settings)).catch(() => {});
   }, [settings, ready]);
@@ -161,14 +177,36 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
   const deleteGroup = useCallback((id: string) => setGroups((gs) => gs.filter((g) => g.id !== id)), []);
+  const saveTrip = useCallback((t: Trip) => {
+    setTripMap((m) => ({ ...m, [t.id]: { ...t, updatedAt: new Date().toISOString() } }));
+  }, []);
+  const updateTrip = useCallback((id: string, fn: (draft: Trip) => void) => {
+    setTripMap((m) => {
+      if (!m[id]) return m;
+      const draft = clone(m[id]);
+      fn(draft);
+      draft.updatedAt = new Date().toISOString();
+      return { ...m, [id]: draft };
+    });
+  }, []);
+  const deleteTrip = useCallback((id: string) => {
+    setTripMap(({ [id]: _, ...rest }) => rest);
+    setBillMap((m) => {
+      const next = { ...m };
+      for (const b of Object.values(m)) if (b.tripId === id) next[b.id] = { ...b, tripId: undefined };
+      return next;
+    });
+    setSettings((s) => (s.activeTripId === id ? { ...s, activeTripId: undefined } : s));
+  }, []);
   const updateSettings = useCallback((patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch })), []);
 
   const bills = useMemo(() => Object.values(billMap).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [billMap]);
   const getBill = useCallback((id: string) => billMap[id], [billMap]);
+  const trips = useMemo(() => Object.values(tripMap).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [tripMap]);
 
   const value = useMemo<Store>(
-    () => ({ ready, bills, getBill, saveBill, updateBill, deleteBill, groups, saveGroup, deleteGroup, settings, updateSettings, session, setSession, ensureSession }),
-    [ready, bills, getBill, saveBill, updateBill, deleteBill, groups, saveGroup, deleteGroup, settings, updateSettings, session, setSession, ensureSession],
+    () => ({ ready, bills, getBill, saveBill, updateBill, deleteBill, groups, saveGroup, deleteGroup, trips, saveTrip, updateTrip, deleteTrip, settings, updateSettings, session, setSession, ensureSession }),
+    [ready, bills, getBill, saveBill, updateBill, deleteBill, groups, saveGroup, deleteGroup, trips, saveTrip, updateTrip, deleteTrip, settings, updateSettings, session, setSession, ensureSession],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

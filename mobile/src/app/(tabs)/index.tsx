@@ -15,11 +15,13 @@ import { radius, space } from '../../theme/theme';
 export default function Home() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
-  const { bills, saveBill, settings } = useStore();
+  const { bills, saveBill, settings, trips } = useStore();
+  const activeTrip = trips.find((t) => t.id === settings.activeTripId);
   const recent = bills.slice(0, 5);
 
   const manual = () => {
     const b = newBill('manual', settings.currency);
+    b.tripId = settings.activeTripId;
     saveBill(b);
     router.push(`/bill/${b.id}/review`);
   };
@@ -27,6 +29,7 @@ export default function Home() {
   const sample = (kind: keyof typeof SAMPLES) => {
     const b = extractionToBill(SAMPLES[kind].result, 'upload', settings.currency, SAMPLES[kind].image);
     b.restaurant = { ...b.restaurant, value: `${b.restaurant.value ?? 'Restaurant'} (sample)` };
+    b.tripId = settings.activeTripId;
     saveBill(b);
     router.push(`/bill/${b.id}/review`);
   };
@@ -38,6 +41,18 @@ export default function Home() {
           <T v="title" color={c.primary}>FairBill</T>
           <T muted>Eat Together. Pay Fairly.</T>
         </View>
+
+        {activeTrip ? (
+          <Card onPress={() => router.push(`/trip/${activeTrip.id}`)} accessibilityLabel={`Trip ${activeTrip.name} is on`}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), backgroundColor: c.primarySoft, borderColor: c.primarySoft }}>
+            <Icon name="trip" color={c.primary} />
+            <View style={{ flex: 1 }}>
+              <T v="bodyStrong" color={c.primary}>{activeTrip.name}</T>
+              <T v="small" muted>New bills go into this trip</T>
+            </View>
+            <Icon name="chevronRight" color={c.primary} />
+          </Card>
+        ) : null}
 
         <Pressable
           onPress={() => router.push({ pathname: '/scan', params: { source: 'camera' } })}

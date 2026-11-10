@@ -8,6 +8,7 @@ import { sum } from '../../../engine/money';
 import { fmt } from '../../../lib/billText';
 import { contactsSupported } from '../../../lib/contacts';
 import { notify } from '../../../lib/confirm';
+import { personKey } from '../../../lib/trip';
 import { useBill, useStore } from '../../../store/AppStore';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { space } from '../../../theme/theme';
@@ -15,7 +16,7 @@ import { space } from '../../../theme/theme';
 export default function People() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { bill, update } = useBill(id);
-  const { settings, groups, saveGroup } = useStore();
+  const { settings, groups, saveGroup, trips, bills } = useStore();
   const { c } = useTheme();
   const [name, setName] = useState('');
   const [multi, setMulti] = useState(false);
@@ -73,6 +74,26 @@ export default function People() {
   };
   const setSinglePayer = (pid: string) => update((d) => { d.payments = { [pid]: d.total.value ?? 0 }; });
 
+  // Everyone from the trip's other bills who isn't on this one yet.
+  const trip = trips.find((t) => t.id === bill.tripId);
+  const here = new Set(bill.participants.map(personKey));
+  const tripPeople = new Map<string, { name: string; phone?: string }>();
+  if (trip) {
+    for (const b of bills) {
+      if (b.tripId !== trip.id || b.id === bill.id) continue;
+      for (const p of b.participants) {
+        const k = personKey(p);
+        if (!here.has(k) && !tripPeople.has(k)) tripPeople.set(k, { name: p.name, phone: p.phone });
+      }
+    }
+  }
+  const addTripPeople = () =>
+    update((d) => {
+      for (const p of tripPeople.values()) {
+        if (!d.participants.some((x) => x.name.toLowerCase() === p.name.toLowerCase())) d.participants.push({ id: uid('p'), name: p.name, phone: p.phone });
+      }
+    });
+
   const favs = [...groups].sort((a, b) => Number(b.favourite) - Number(a.favourite)).slice(0, 6);
   const paymentsOk = paidSum === total && payerIds.length > 0;
 
@@ -85,6 +106,9 @@ export default function People() {
     }>
       <Steps current={1} />
 
+      {trip && tripPeople.size ? (
+        <Chip label={`Everyone from ${trip.name} · ${tripPeople.size}`} icon="trip" onPress={addTripPeople} />
+      ) : null}
       {favs.length ? (
         <>
           <SectionTitle>Add a group</SectionTitle>

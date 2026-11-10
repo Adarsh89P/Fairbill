@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { TextInput, View } from 'react-native';
+import { Icon } from '../../../components/Icon';
 import { Banner, Btn, Card, Chip, Empty, Row, Screen, Segmented, Steps, T } from '../../../components/ui';
 import { allocate } from '../../../engine/money';
 import { computeSplit, describeShares, itemNet } from '../../../engine/split';
@@ -36,13 +37,34 @@ export default function Assign() {
       </>
     }>
       <Steps current={2} />
+      <PickingCard bill={bill} />
       <Row style={{ justifyContent: 'space-between' }}>
         <T muted>{assigned} of {bill.items.length} items assigned</T>
         {assigned < bill.items.length ? <Btn title="Share the rest with everyone" small variant="ghost" onPress={splitRestEqually} /> : null}
       </Row>
+      {bill.participants.length > 2 && bill.items.length > 1 ? (
+        <Btn title="Everyone except…" icon="users" variant="secondary" small onPress={() => router.push(`/bill/${bill.id}/bulk`)}
+          accessibilityHint="Share several items between everyone but a few people" />
+      ) : null}
       {bill.items.map((it) => <ItemAssign key={it.id} bill={bill} item={it} update={update} error={itemErrors.find((e) => e.itemId === it.id)?.message} />)}
       <PersonPreview bill={bill} people={split.people} />
     </Screen>
+  );
+}
+
+function PickingCard({ bill }: { bill: Bill }) {
+  const { c } = useTheme();
+  const picking = bill.share?.phase === 'picking';
+  return (
+    <Card onPress={() => router.push(`/bill/${bill.id}/picks`)} accessibilityLabel="Let friends tick what they had"
+      style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), backgroundColor: c.primarySoft, borderColor: c.primarySoft }}>
+      <Icon name="share" color={c.primary} />
+      <View style={{ flex: 1 }}>
+        <T v="bodyStrong" color={c.primary}>{picking ? "See what friends ticked" : 'Let friends tick what they had'}</T>
+        <T v="small" muted>{picking ? 'Their picks fill in the items below' : 'Send a link — each person picks their own dishes'}</T>
+      </View>
+      <Icon name="chevronRight" color={c.primary} />
+    </Card>
   );
 }
 
@@ -98,7 +120,7 @@ function ItemAssign({ bill, item, update, error }: { bill: Bill; item: BillItem;
       <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
           <T v="bodyStrong">{item.name.value}</T>
-          <T v="small" muted>{item.quantity.value ? `Qty ${item.quantity.value} · ` : ''}{ids.length > 1 ? `Shared by ${ids.length}` : ids.length ? 'One person' : 'Not assigned yet'}</T>
+          <T v="small" muted>{item.quantity.value ? `Qty ${item.quantity.value} · ` : ''}{shareLabel(bill, ids)}</T>
         </View>
         <T v="amount">{fmt(bill, net)}</T>
       </Row>
@@ -136,6 +158,16 @@ function ItemAssign({ bill, item, update, error }: { bill: Bill; item: BillItem;
       {error ? <Banner tone="danger">{error}</Banner> : null}
     </Card>
   );
+}
+
+function shareLabel(bill: Bill, ids: string[]): string {
+  const n = bill.participants.length;
+  if (!ids.length) return 'Not assigned yet';
+  if (ids.length === n) return n > 1 ? 'Everyone' : 'One person';
+  const out = bill.participants.filter((p) => !ids.includes(p.id));
+  // "Everyone except Priya" reads better than "Shared by 5" when only one or two are left out.
+  if (n >= 4 && out.length <= 2) return `Everyone except ${out.map((p) => p.name).join(' & ')}`;
+  return ids.length > 1 ? `Shared by ${ids.length}` : 'One person';
 }
 
 function PersonPreview({ bill, people }: { bill: Bill; people: ReturnType<typeof computeSplit>['people'] }) {
