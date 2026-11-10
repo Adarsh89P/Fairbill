@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: fairbill
+  datasource:
+    url: ${FAIRBILL_DB_URL:jdbc:postgresql://localhost:5432/fairbill}
+    username: ${FAIRBILL_DB_USER:fairbill}
+    password: ${FAIRBILL_DB_PASSWORD:fairbill}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 12MB
+      max-request-size: 13MB
+  jackson:
+    default-property-inclusion: always
+
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+fairbill:
+  public-base-url: ${FAIRBILL_PUBLIC_URL:http://localhost:8080}
+  jwt:
+    # 32+ random bytes, base64. When empty a random key is generated at startup (tokens then reset on restart).
+    secret: ${FAIRBILL_JWT_SECRET:}
+    ttl-days: 60
+  cors:
+    allowed-origins: ${FAIRBILL_CORS_ORIGINS:http://localhost:8081,http://localhost:19006}
+  ocr:
+    engine: ${FAIRBILL_OCR_ENGINE:auto} # auto | tesseract | google-vision
+    tesseract:
+      binary: ${FAIRBILL_TESSERACT:tesseract}
+      languages: ${FAIRBILL_TESSERACT_LANGS:eng}
+    google:
+      api-key: ${GOOGLE_VISION_API_KEY:}
+  receipts:
+    retention-days: 30
+  limits:
+    scans-per-hour: 40
+    accounts-per-ip-per-hour: 20

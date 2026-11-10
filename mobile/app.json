@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "FairBill",
+    "slug": "fairbill",
+    "scheme": "fairbill",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.fairbill",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FairBill uses the camera to scan your restaurant bill.",
+        "NSPhotoLibraryUsageDescription": "FairBill reads a bill photo you choose to upload."
+      }
+    },
+    "android": {
+      "package": "app.fairbill",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B6E4F",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "FairBill uses the camera to scan your restaurant bill.",
+          "photosPermission": "FairBill reads a bill photo you choose to upload."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
