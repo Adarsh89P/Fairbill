@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { Icon } from '../../../components/Icon';
 import { MoneyField } from '../../../components/MoneyField';
@@ -40,12 +40,26 @@ export default function Review() {
     return { review, dups, itemsTotal, chargesTotal, computed, notDetected, reconcileIssues };
   }, [bill]);
 
+  // Keep "extra not on the bill" in step with the items: total = items + charges while it is included.
+  const syncComputed = derived?.computed;
+  useEffect(() => {
+    if (!bill || bill.printedTotal == null || syncComputed === undefined) return;
+    if (syncComputed > bill.printedTotal) {
+      if (bill.total.value !== syncComputed) update((d) => { d.total = { ...d.total, value: syncComputed, status: 'ok' }; });
+    } else {
+      // Nothing extra any more: go back to the printed amount.
+      update((d) => { d.total = { ...d.total, value: d.printedTotal!, status: 'ok' }; delete d.printedTotal; });
+    }
+  }, [syncComputed, bill?.printedTotal]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!bill || !derived) return <Screen><Empty icon="receipt" title="Bill not found" /></Screen>;
   const { review, dups, computed, notDetected, reconcileIssues } = derived;
   const isOcr = bill.origin !== 'manual';
   const headerVerify = [bill.total, bill.subtotal, bill.restaurant, bill.date, bill.billNumber].filter((f) => f.status === 'verify').length;
   const missingPrices = bill.items.filter((i) => i.amount.value === null).length;
   const totalMismatch = bill.total.value !== null && bill.total.value !== computed;
+  const printed = bill.printedTotal ?? bill.total.value;
+  const extra = bill.printedTotal != null && bill.total.value !== null ? bill.total.value - bill.printedTotal : 0;
 
   const blockers: string[] = [];
   if (bill.items.length === 0) blockers.push('Add at least one item');
@@ -204,9 +218,13 @@ export default function Review() {
           <MoneyField label="Subtotal (as printed, optional)" currency={bill.currency} value={bill.subtotal.value} warn={bill.subtotal.status === 'verify'}
             hint={bill.subtotal.note}
             onChange={(v) => update((d) => { d.subtotal = v === null ? { value: null, status: 'missing' } : { value: v, status: 'ok' }; })} />
-          <MoneyField label="Final bill amount (as printed)" currency={bill.currency} value={bill.total.value}
+          <MoneyField label="Final bill amount (as printed)" currency={bill.currency} value={printed}
             warn={bill.total.status !== 'ok'} hint={bill.total.status === 'missing' ? 'Not detected — enter the amount printed on the bill' : bill.total.note}
-            onChange={(v) => update((d) => { d.total = v === null ? { value: null, status: 'missing' } : { value: v, status: 'ok' }; })} />
+            onChange={(v) => update((d) => {
+              if (d.printedTotal != null && v !== null) { d.printedTotal = v; return; } // extra is re-synced from the items
+              delete d.printedTotal;
+              d.total = v === null ? { value: null, status: 'missing' } : { value: v, status: 'ok' };
+            })} />
           {bill.total.status !== 'ok' && canShowOnPhoto(bill, bill.total.box) ? <ReceiptCrop bill={bill} focus={bill.total.box} tone={bill.total.status} label="the bill total" /> : null}
           {bill.total.status === 'verify' && bill.total.value !== null ? (
             <Btn title="This amount is correct" icon="check" variant="secondary" small onPress={() => update((d) => { d.total.status = 'ok'; })} />
@@ -216,7 +234,29 @@ export default function Review() {
             <T muted>Items + taxes & charges</T>
             <T v="amount">{fmt(bill, computed)}</T>
           </Row>
-          {bill.total.value === null ? null : totalMismatch ? (
+          {bill.total.value === null ? null : extra > 0 && !totalMismatch ? (
+            <View style={{ gap: space(2) }}>
+              <ExtraBreakdown bill={bill} printed={bill.printedTotal!} extra={extra} />
+              <Btn small variant="secondary" title={`Skip the extra · keep ${fmt(bill, bill.printedTotal!)}`}
+                onPress={() => update((d) => {
+                  const p = d.printedTotal!;
+                  d.charges.push(newCharge('OTHER', p - computed, 'Not on the bill (skipped)'));
+                  d.total = { ...d.total, value: p, status: 'ok' };
+                  delete d.printedTotal;
+                })} />
+            </View>
+          ) : totalMismatch && computed > bill.total.value && bill.printedTotal == null ? (
+            <View style={{ gap: space(2) }}>
+              <Banner tone="warning" title={`${fmt(bill, computed - bill.total.value)} more than the printed bill`}>
+                <T v="small">Items and charges add up to {fmt(bill, computed)} but the bill says {fmt(bill, bill.total.value)}. If you added things that aren't on this bill, include them as an extra amount. Otherwise check for a misread price.</T>
+              </Banner>
+              <ExtraBreakdown bill={bill} printed={bill.total.value} extra={computed - bill.total.value} />
+              <Btn icon="check" title={`Include extra · Final ${fmt(bill, computed)}`}
+                onPress={() => update((d) => { d.printedTotal = d.total.value!; d.total = { ...d.total, value: computed, status: 'ok' }; })} />
+              <Btn small variant="secondary" title={`Skip the extra · keep ${fmt(bill, bill.total.value)}`}
+                onPress={() => update((d) => { d.charges.push(newCharge('OTHER', bill.total.value! - computed, 'Not on the bill (skipped)')); })} />
+            </View>
+          ) : totalMismatch ? (
             <Banner tone="danger" title={`Off by ${fmt(bill, bill.total.value - computed)}`}>
               <View style={{ gap: space(2) }}>
                 <T v="small">Items and charges add up to {fmt(bill, computed)} but the bill says {fmt(bill, bill.total.value)}. Check for a missing item, a misread price or a charge like round-off.</T>
@@ -231,6 +271,26 @@ export default function Review() {
         </Card>
       </Screen>
     </>
+  );
+}
+
+/** Printed amount + extra not on the bill = what everyone pays. */
+function ExtraBreakdown({ bill, printed, extra }: { bill: Bill; printed: number; extra: number }) {
+  const { c } = useTheme();
+  const line = (label: string, value: string, strong = false) => (
+    <Row style={{ justifyContent: 'space-between' }}>
+      <T v={strong ? 'bodyStrong' : 'body'} muted={!strong}>{label}</T>
+      <T v={strong ? 'amount' : 'bodyStrong'}>{value}</T>
+    </Row>
+  );
+  return (
+    <View style={{ gap: space(2), borderWidth: 1, borderColor: c.border, borderRadius: radius.md, padding: space(3) }}
+      accessibilityLabel={`Printed bill ${fmt(bill, printed)}, extra not on the bill ${fmt(bill, extra)}, final amount ${fmt(bill, printed + extra)}`}>
+      {line('Printed bill amount', fmt(bill, printed))}
+      {line('Extra (not on the bill)', '+ ' + fmt(bill, extra))}
+      <Divider />
+      {line('Final amount', fmt(bill, printed + extra), true)}
+    </View>
   );
 }
 

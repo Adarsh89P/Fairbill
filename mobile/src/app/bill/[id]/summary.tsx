@@ -2,6 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
+import { extraNotOnBill } from '../../../engine/split';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Linking, Platform, Pressable, View } from 'react-native';
 import { api } from '../../../api/client';
@@ -129,7 +130,7 @@ export default function Summary() {
       <Card style={{ backgroundColor: c.primary, borderColor: c.primary, gap: space(1) }}>
         <T color={c.onPrimary} style={{ opacity: 0.85 }}>{billTitle(bill)}{bill.date.value ? ` · ${displayDate(bill.date.value)}` : ''}</T>
         <T v="display" color={c.onPrimary}>{fmt(bill, split.computedTotal)}</T>
-        <T color={c.onPrimary} style={{ opacity: 0.9 }}>Total restaurant bill{payersText(bill) ? ` · paid by ${payersText(bill)}` : ''}</T>
+        <T color={c.onPrimary} style={{ opacity: 0.9 }}>{extraNotOnBill(bill) > 0 ? `Bill ${fmt(bill, bill.printedTotal!)} + ${fmt(bill, extraNotOnBill(bill))} extra not on the bill` : 'Total restaurant bill'}{payersText(bill) ? ` · paid by ${payersText(bill)}` : ''}</T>
         <View style={{ alignSelf: 'flex-start', marginTop: space(2), backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
           <T v="small" color={c.onPrimary} style={{ fontWeight: '700' }}>
             {settlement.transfers.length === 0 ? 'Nothing to settle' : allSettled ? 'All settled ✓' : `${fmt(bill, pendingTotal)} pending`}

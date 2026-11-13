@@ -221,6 +221,12 @@ export function computeSplit(bill: Bill): SplitResult {
 }
 
 /** Compare our arithmetic with the amounts printed on the bill. */
+/** Amount the user included on top of the printed bill (items/charges not on it). 0 when none. */
+export function extraNotOnBill(bill: Bill): Minor {
+  if (bill.printedTotal == null || bill.total.value === null) return 0;
+  return Math.max(0, bill.total.value - bill.printedTotal);
+}
+
 export function reconcile(bill: Bill, itemsTotal: Minor, computedTotal: Minor): Issue[] {
   const issues: Issue[] = [];
   const cur = currencyFor(bill.currency);
@@ -241,12 +247,14 @@ export function reconcile(bill: Bill, itemsTotal: Minor, computedTotal: Minor): 
   }
   const subtotal = bill.subtotal.value;
   if (subtotal !== null) {
-    const gross = sum(bill.items.map((i) => i.amount.value ?? 0));
-    if (subtotal !== itemsTotal && subtotal !== gross) {
+    // Extra added on top of the printed bill isn't part of the printed subtotal.
+    const extra = extraNotOnBill(bill);
+    const gross = sum(bill.items.map((i) => i.amount.value ?? 0)) - extra;
+    if (subtotal !== itemsTotal - extra && subtotal !== gross) {
       issues.push({
         level: 'warning',
         code: 'SUBTOTAL_MISMATCH',
-        message: `Items add up to ${fmt(itemsTotal)} but the printed subtotal is ${fmt(subtotal)}. An item may be missing or misread.`,
+        message: `${extra ? "Items on the bill" : "Items"} add up to ${fmt(itemsTotal - extra)} but the printed subtotal is ${fmt(subtotal)}. An item may be missing or misread.`,
       });
     }
   }

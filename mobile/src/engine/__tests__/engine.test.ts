@@ -169,3 +169,19 @@ describe('settle', () => {
     expect(settle(b, computeSplit(b)).issues.length).toBe(1);
   });
 });
+
+describe('extra not on the printed bill', () => {
+  test('subtotal check ignores the included extra', () => {
+    const { newBill, newItem, ok } = require('../factory');
+    const { reconcile, extraNotOnBill } = require('../split');
+    const b = newBill('manual');
+    b.items = [newItem('Thali', 90000), newItem('Cake (bought outside)', 50000)];
+    b.subtotal = ok(90000);
+    b.printedTotal = 90000;
+    b.total = ok(140000);
+    expect(extraNotOnBill(b)).toBe(50000);
+    const codes = reconcile(b, 140000, 140000).map((i: any) => i.code);
+    expect(codes).not.toContain('SUBTOTAL_MISMATCH');
+    expect(codes).not.toContain('TOTAL_MISMATCH');
+  });
+});

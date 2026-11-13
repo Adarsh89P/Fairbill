@@ -118,6 +118,11 @@ export interface Bill {
   date: Tracked<string>; // ISO yyyy-mm-dd when known
   subtotal: Tracked<Minor>;
   total: Tracked<Minor>;
+  /**
+   * Set when the user added things that aren't on the printed bill and chose to include them:
+   * the amount printed on the bill. total is then printedTotal + the extra (not on the bill).
+   */
+  printedTotal?: Minor;
   items: BillItem[];
   charges: BillCharge[];
   warnings: ExtractionWarning[];
