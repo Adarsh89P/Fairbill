@@ -63,6 +63,16 @@ EXPO_PUBLIC_API_URL=http://<your-computer-LAN-IP>:8080 npx expo start   # scan t
 
 Manual bills, splitting, history, groups, stats, WhatsApp/copy/PDF all work with no server. Scanning and QR guest links need the backend.
 
+**Web app on GitHub Pages** (published from the `gh-pages` branch):
+
+```bash
+cd mobile
+EXPO_BASE_URL=/Fairbill npx expo export -p web --output-dir dist-pages
+cp dist-pages/index.html dist-pages/404.html && touch dist-pages/.nojekyll   # deep links survive a reload
+```
+
+Then put the contents of `dist-pages/` on the `gh-pages` branch. Without a hosted server, scanning and friend links don't work there.
+
 **Tests:**
 
 ```bash
