@@ -67,11 +67,10 @@ Manual bills, splitting, history, groups, stats, WhatsApp/copy/PDF all work with
 
 ```bash
 cd mobile
-EXPO_BASE_URL=/Fairbill npx expo export -p web --output-dir dist-pages
-cp dist-pages/index.html dist-pages/404.html && touch dist-pages/.nojekyll   # deep links survive a reload
+npm run build:pages   # copies the in-browser bill reader into public/ocr, exports for /Fairbill/, adds 404.html
 ```
 
-Then put the contents of `dist-pages/` on the `gh-pages` branch. Without a hosted server, scanning and friend links don't work there.
+Then put the contents of `dist-pages/` on the `gh-pages` branch. With no server, the web app reads bill photos in the browser (below); friend links and photo sharing still need the server.
 
 **Tests:**
 
@@ -113,6 +112,8 @@ cd backend && mvn test                        # parser, real Tesseract pipeline,
 
 ## Features added after the first version
 
+- **Scanning without a server (web)**: when no FairBill server answers, the web app reads the bill in the browser with Tesseract.js and a TypeScript port of the server's parser and validator (`mobile/src/extraction/local`, same tests as `ReceiptParserTest`). The reader (~7 MB) is served by the site, starts downloading when Scan is tapped and is cached afterwards. For hard photos it tries a second, adaptive black-and-white pass (shadows, creases, photos of screens) and turned versions for sideways photos, corrects for tilt when grouping rows, and when a misread amount disagrees with its own quantity × rate it uses qty × rate if that is what makes the items match the printed subtotal (still marked for review).
+
 - **Check values on the photo**: the scanner reports where each value sits on the photo (mapped back through its own scaling and rotation). Flagged items, taxes, the total and the date show a zoomed strip of that line with the value outlined; the full photo outlines every value to check.
 - **Friends tick their own items**: from *Who had what?*, send one link; each friend picks what they had (or adds themselves if they weren't listed). Their picks fill in the assignments; shared dishes are split equally between everyone who ticked them. The same link later shows the final split.
 - **Everyone except…**: share several items at once between everybody but the people you tap out.
@@ -126,6 +127,7 @@ cd backend && mvn test                        # parser, real Tesseract pipeline,
 - On-device ML Kit isn't used (it needs a custom dev build); OCR runs on the server.
 - Item picking is trust-based too: anyone with the link can tick items for any name on it. The payer reviews picks before using them.
 - Picks for items with quantity > 1 are split equally between the people who ticked them; uneven counts (3 beers vs 1) are adjusted in the app.
+- The tilt correction and the qty × rate repair exist only in the in-browser reader so far; port them to the server's `LineAssembler` / `ExtractionValidator`.
 - Trips are stored on the device only (not yet synced to the server).
 - Guest "I've paid" is trust-based (anyone with the link can mark a payment); the owner sees who marked it and can undo it.
 - Rate limiting is in-memory per instance; use a shared store when scaling out.

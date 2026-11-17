@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { startBillPhoto } from '../../lib/photo';
-import React from 'react';
+import { preloadBillReaderIfCheap } from '../../lib/billReader';
+import React, { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BillRow } from '../../components/BillRow';
@@ -17,6 +18,8 @@ export default function Home() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const { bills, saveBill, settings, trips } = useStore();
+  // Web without a server: quietly fetch the bill reader in the background on a fast connection.
+  useEffect(() => preloadBillReaderIfCheap(settings.apiUrl), []); // eslint-disable-line react-hooks/exhaustive-deps
   const activeTrip = trips.find((t) => t.id === settings.activeTripId);
   const recent = bills.slice(0, 5);
 

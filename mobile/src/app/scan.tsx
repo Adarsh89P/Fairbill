@@ -2,12 +2,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api, ApiError } from '../api/client';
+import { ApiError } from '../api/client';
 import { Icon } from '../components/Icon';
 import { Banner, Btn, Row, T } from '../components/ui';
 import { newBill } from '../engine/factory';
 import { extractionToBill } from '../extraction/toBill';
 import { pickBillPhoto, Photo, PhotoError, takeStartedPhoto } from '../lib/photo';
+import { prepareBillReader, readBill } from '../lib/billReader';
+import { LocalScanError, ScanProgress } from '../extraction/local/browserReader';
 import { useStore } from '../store/AppStore';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space } from '../theme/theme';
@@ -22,26 +24,18 @@ export default function Scan() {
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<{ message: string; canRetry: boolean } | null>(null);
+  /** Live step from the in-browser reader (download / reading progress). */
+  const [live, setLive] = useState<ScanProgress | null>(null);
   const started = useRef(false);
 
   const process = useCallback(async (p: Photo) => {
     setError(null);
     setStep(0);
     const ticker = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 1200);
+    setLive(null);
     try {
-      const run = async () => {
-        const s = await ensureSession();
-        return api(settings.apiUrl, s.token).scanReceipt(p.uri, p.mimeType, settings.keepReceipts);
-      };
-      let result;
-      try {
-        result = await run();
-      } catch (e) {
-        if (e instanceof ApiError && e.status === 401) {
-          setSession(null); // stale token (e.g. server key rotated): get a fresh anonymous session once
-          result = await run();
-        } else throw e;
-      }
+      const result = await readBill(p.uri, p.mimeType, { apiUrl: settings.apiUrl, keepReceipts: settings.keepReceipts, ensureSession, setSession },
+        (pr) => setLive(pr));
       const origin = source === 'library' ? 'upload' : 'scan';
       let bill = extractionToBill(result, origin, settings.currency, p.uri);
       bill.tripId = settings.activeTripId;
@@ -54,9 +48,12 @@ export default function Scan() {
       router.replace(`/bill/${bill.id}/review`);
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : 'Something went wrong while reading the bill.';
-      setError({ message: msg, canRetry: !(e instanceof ApiError && (e.code === 'UNREADABLE_IMAGE' || e.code === 'UNSUPPORTED_TYPE' || e.code === 'NO_SERVER')) });
+      const code = e instanceof ApiError || e instanceof LocalScanError ? e.code : '';
+      const msg2 = e instanceof LocalScanError ? e.message : msg;
+      setError({ message: msg2, canRetry: !['UNREADABLE_IMAGE', 'UNSUPPORTED_TYPE', 'NO_SERVER', 'LOW_RESOLUTION', 'LOCAL_UNAVAILABLE'].includes(code) });
     } finally {
       clearInterval(ticker);
+      setLive(null);
     }
   }, [ensureSession, getBill, replace, saveBill, setSession, settings.apiUrl, settings.currency, settings.keepReceipts, settings.activeTripId, source]);
 
@@ -84,6 +81,7 @@ export default function Scan() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    prepareBillReader(settings.apiUrl); // web without a server: download the reader while the camera is open
     // On the web the tap that brought us here already opened the picker (see startBillPhoto).
     pick(source === 'library' ? 'library' : 'camera', takeStartedPhoto());
   }, [pick, source]);
@@ -140,6 +138,9 @@ export default function Scan() {
               <T v={i === step ? 'bodyStrong' : 'body'} muted={i > step}>{s}</T>
             </Row>
           ))}
+          {live ? (
+            <T v="small" muted>{live.step}{live.progress != null && live.progress > 0 && live.progress < 1 ? ` · ${Math.round(live.progress * 100)}%` : ''}</T>
+          ) : null}
         </View>
       ) : null}
     </View>
