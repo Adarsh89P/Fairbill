@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { startBillPhoto } from '../../lib/photo';
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,7 +56,7 @@ export default function Home() {
         ) : null}
 
         <Pressable
-          onPress={() => router.push({ pathname: '/scan', params: { source: 'camera' } })}
+          onPress={() => { startBillPhoto('camera'); router.push({ pathname: '/scan', params: { source: 'camera' } }); }}
           accessibilityRole="button"
           accessibilityLabel="Scan a bill with the camera"
           style={({ pressed }) => ({
@@ -69,7 +70,7 @@ export default function Home() {
         </Pressable>
 
         <Row gap={3}>
-          <ActionTile icon="upload" title="Upload Bill" sub="From gallery" onPress={() => router.push({ pathname: '/scan', params: { source: 'library' } })} />
+          <ActionTile icon="upload" title="Upload Bill" sub="From gallery" onPress={() => { startBillPhoto('library'); router.push({ pathname: '/scan', params: { source: 'library' } }); }} />
           <ActionTile icon="edit" title="Manual Bill" sub="Works offline" onPress={manual} />
         </Row>
 

@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { startBillPhoto } from '../../lib/photo';
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { BillRow } from '../../components/BillRow';
@@ -36,7 +37,7 @@ export default function Bills() {
       {list.length === 0 ? (
         <Card>
           <Empty icon="receipt" title={bills.length ? 'No matching bills' : 'No bills yet'} body={bills.length ? 'Try another search or filter.' : 'Bills you scan or create appear here.'}
-            action={bills.length ? undefined : <Btn title="Scan a bill" icon="camera" onPress={() => router.push({ pathname: '/scan', params: { source: 'camera' } })} />} />
+            action={bills.length ? undefined : <Btn title="Scan a bill" icon="camera" onPress={() => { startBillPhoto('camera'); router.push({ pathname: '/scan', params: { source: 'camera' } }); }} />} />
         </Card>
       ) : (
         list.map((b) => <BillRow key={b.id} bill={b} />)

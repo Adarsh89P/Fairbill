@@ -11,9 +11,65 @@ export interface Photo {
 
 export class PhotoError extends Error {}
 
+/**
+ * Browsers only open the camera / file picker from inside the user's tap (iPhone Safari is strict about
+ * this; Android Chrome is lenient). So on the web the picker is opened synchronously here, before any await.
+ */
+function webPick(source: 'camera' | 'library'): Promise<Photo | null> {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  if (source === 'camera') input.setAttribute('capture', 'environment');
+  input.style.position = 'fixed';
+  input.style.left = '-9999px';
+  document.body.appendChild(input);
+  const done = new Promise<Photo | null>((resolve, reject) => {
+    const finish = (v: Photo | null, err?: unknown) => {
+      input.remove();
+      if (err) reject(err); else resolve(v);
+    };
+    input.addEventListener('cancel', () => finish(null));
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return finish(null);
+      const reader = new FileReader();
+      reader.onerror = () => finish(null, new PhotoError('Could not read that photo. Please try another one.'));
+      reader.onload = () => {
+        const uri = String(reader.result);
+        const img = new window.Image();
+        img.onload = () => finish({ uri, mimeType: file.type || 'image/jpeg', width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => finish(null, new PhotoError("That file doesn't look like a photo. Please choose a JPG or PNG."));
+        img.src = uri;
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+  input.click();
+  return done;
+}
+
+let started: { source: 'camera' | 'library'; photo: Promise<Photo | null> } | null = null;
+
+/** Call inside the tap (before navigating to the scan screen) so the browser lets the camera open. No-op on phones. */
+export function startBillPhoto(source: 'camera' | 'library'): void {
+  if (Platform.OS !== 'web') return;
+  started = { source, photo: webPick(source).then((p) => (p ? prepare(p) : null)) };
+}
+
+/** The photo picker opened by startBillPhoto, if any (taken once). */
+export function takeStartedPhoto(): Promise<Photo | null> | null {
+  const s = started;
+  started = null;
+  return s ? s.photo : null;
+}
+
 /** Camera or gallery, then a resize so uploads are fast but text stays sharp. Returns null if cancelled. */
 export async function pickBillPhoto(source: 'camera' | 'library'): Promise<Photo | null> {
-  if (source === 'camera' && Platform.OS !== 'web') {
+  if (Platform.OS === 'web') {
+    const p = await webPick(source); // must stay the first thing here: it opens the picker inside the tap
+    return p ? prepare(p) : null;
+  }
+  if (source === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) throw new PhotoError('Camera access is off. Allow it in Settings, or upload a photo instead.');
   }

@@ -1,13 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, ApiError } from '../api/client';
 import { Icon } from '../components/Icon';
 import { Banner, Btn, Row, T } from '../components/ui';
 import { newBill } from '../engine/factory';
 import { extractionToBill } from '../extraction/toBill';
-import { pickBillPhoto, Photo, PhotoError } from '../lib/photo';
+import { pickBillPhoto, Photo, PhotoError, takeStartedPhoto } from '../lib/photo';
 import { useStore } from '../store/AppStore';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, space } from '../theme/theme';
@@ -54,16 +54,21 @@ export default function Scan() {
       router.replace(`/bill/${bill.id}/review`);
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : 'Something went wrong while reading the bill.';
-      setError({ message: msg, canRetry: !(e instanceof ApiError && (e.code === 'UNREADABLE_IMAGE' || e.code === 'UNSUPPORTED_TYPE')) });
+      setError({ message: msg, canRetry: !(e instanceof ApiError && (e.code === 'UNREADABLE_IMAGE' || e.code === 'UNSUPPORTED_TYPE' || e.code === 'NO_SERVER')) });
     } finally {
       clearInterval(ticker);
     }
   }, [ensureSession, getBill, replace, saveBill, setSession, settings.apiUrl, settings.currency, settings.keepReceipts, settings.activeTripId, source]);
 
-  const pick = useCallback(async (src: 'camera' | 'library') => {
+  const [waiting, setWaiting] = useState(false);
+  const pick = useCallback(async (src: 'camera' | 'library', already?: Promise<Photo | null> | null) => {
+    // pickBillPhoto has to run before any state update: on the web it opens the picker inside the tap.
+    const picking = already ?? pickBillPhoto(src);
     setError(null);
+    setWaiting(true);
     try {
-      const p = await pickBillPhoto(src);
+      const p = await picking;
+      setWaiting(false);
       if (!p) {
         if (!photo) router.back();
         return;
@@ -71,6 +76,7 @@ export default function Scan() {
       setPhoto(p);
       process(p);
     } catch (e) {
+      setWaiting(false);
       setError({ message: e instanceof PhotoError ? e.message : 'Could not open the camera.', canRetry: false });
     }
   }, [photo, process]);
@@ -78,7 +84,8 @@ export default function Scan() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    pick(source === 'library' ? 'library' : 'camera');
+    // On the web the tap that brought us here already opened the picker (see startBillPhoto).
+    pick(source === 'library' ? 'library' : 'camera', takeStartedPhoto());
   }, [pick, source]);
 
   const manual = () => {
@@ -117,6 +124,13 @@ export default function Scan() {
             <Btn title="Upload" icon="upload" variant="secondary" style={{ flex: 1 }} onPress={() => pick('library')} />
           </Row>
           <Btn title="Enter bill manually" icon="edit" variant="ghost" onPress={manual} />
+        </View>
+      ) : !photo && Platform.OS === 'web' ? (
+        // If the browser didn't open the camera by itself (or it was closed), let the user open it with a tap.
+        <View style={{ gap: space(2) }}>
+          <Btn title="Take photo" icon="camera" onPress={() => pick('camera')} />
+          <Btn title="Choose from gallery" icon="upload" variant="secondary" onPress={() => pick('library')} />
+          {waiting ? null : <Btn title="Enter bill manually" icon="edit" variant="ghost" onPress={manual} />}
         </View>
       ) : photo ? (
         <View style={{ gap: space(2), backgroundColor: c.surface, borderRadius: radius.lg, padding: space(4), borderWidth: 1, borderColor: c.border }} accessibilityLiveRegion="polite">

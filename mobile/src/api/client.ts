@@ -105,6 +105,11 @@ export function api(baseUrl: string, token?: string) {
     } catch {
       /* non-JSON */
     }
+    if (!res.ok && data === null && [404, 405, 501].includes(res.status)) {
+      // The FairBill server always answers in JSON; a plain-page error means there is no FairBill server at this address
+      // (e.g. the web app hosted on GitHub Pages on its own).
+      throw new ApiError(res.status, 'NO_SERVER', "This version of FairBill isn't connected to a server, so bills can't be read from photos yet. Tap \"Enter bill manually\" and type in the items from your photo.");
+    }
     if (!res.ok) {
       throw new ApiError(res.status, data?.code ?? 'HTTP_' + res.status,
         data?.message ?? (res.status === 401 ? 'Your session expired. Please try again.' : 'Something went wrong. Please try again.'));

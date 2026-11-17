@@ -1,4 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { startBillPhoto } from '../../../lib/photo';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { Icon } from '../../../components/Icon';
@@ -112,7 +113,7 @@ export default function Review() {
                 <T v="small" muted>{!bill.receiptImageUri ? 'Photo not kept on this device' : bill.receiptSize ? 'Values to check are zoomed in below. Tap for the full photo.' : 'Tap to compare with what we read'}</T>
               </View>
               <Btn title="Retake" icon="camera" variant="secondary" small
-                onPress={() => router.push({ pathname: '/scan', params: { source: 'camera', replace: bill.id } })} />
+                onPress={() => { startBillPhoto('camera'); router.push({ pathname: '/scan', params: { source: 'camera', replace: bill.id } }); }} />
             </Row>
             {showImage && bill.receiptImageUri ? <ReceiptOverview bill={bill} marks={flaggedMarks(bill)} /> : null}
           </Card>
