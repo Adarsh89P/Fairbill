@@ -45,7 +45,7 @@
     "web": "expo start --web",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "build:pages": "node scripts/copy-ocr-assets.mjs && EXPO_BASE_URL=/Fairbill expo export -p web --output-dir dist-pages && cp dist-pages/index.html dist-pages/404.html && touch dist-pages/.nojekyll"
+    "build:pages": "node scripts/copy-ocr-assets.mjs && EXPO_BASE_URL=/Fairbill expo export -p web --output-dir dist-pages && EXPO_BASE_URL=/Fairbill node scripts/finish-pages.mjs dist-pages"
   },
   "private": true
 }
