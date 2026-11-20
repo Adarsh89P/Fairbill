@@ -112,6 +112,9 @@ cd backend && mvn test                        # parser, real Tesseract pipeline,
 
 ## Features added after the first version
 
+- **Design refresh (from the Figma file)**: indigo brand color with cool-grey neutrals (light and dark); bottom nav Home · My Bills · **Scan** (raised center button) · Trips · Groups; Home starts with your profile photo, greeting and name (tap → Profile, where you add or change the photo) and a bell that shows a dot while payments are still open.
+- **Live bill scanner (web)**: the camera view finds all four edges of the bill (`mobile/src/lib/docScan.ts`: Otsu threshold → largest light region → corners, must look like a rectangle and not run off the frame), auto-captures when it holds still for about a second, then straightens and crops it with a perspective transform before reading. "Long bill · scan in parts" captures several parts and stacks them. After reading, a "Ready to split?" sheet shows the restaurant, item count and total; the bill is saved only on "Review & split". Without camera access (or in the phone apps, which have no camera module in Expo Go) it falls back to taking or choosing a photo.
+
 - **Scanning without a server (web)**: when no FairBill server answers, the web app reads the bill in the browser with Tesseract.js and a TypeScript port of the server's parser and validator (`mobile/src/extraction/local`, same tests as `ReceiptParserTest`). The reader (~7 MB) is served by the site, starts downloading when Scan is tapped and is cached afterwards. For hard photos it tries a second, adaptive black-and-white pass (shadows, creases, photos of screens) and turned versions for sideways photos, corrects for tilt when grouping rows, and when a misread amount disagrees with its own quantity × rate it uses qty × rate if that is what makes the items match the printed subtotal (still marked for review).
 
 - **Check values on the photo**: the scanner reports where each value sits on the photo (mapped back through its own scaling and rotation). Flagged items, taxes, the total and the date show a zoomed strip of that line with the value outlined; the full photo outlines every value to check.
@@ -128,6 +131,8 @@ cd backend && mvn test                        # parser, real Tesseract pipeline,
 - Item picking is trust-based too: anyone with the link can tick items for any name on it. The payer reviews picks before using them.
 - Picks for items with quantity > 1 are split equally between the people who ticked them; uneven counts (3 beers vs 1) are adjusted in the app.
 - The tilt correction and the qty × rate repair exist only in the in-browser reader so far; port them to the server's `LineAssembler` / `ExtractionValidator`.
+- Long-bill parts are stacked as captured; overlapping lines can show up twice and are flagged as possible duplicates on Review.
+- The phone apps still use the phone's camera app for scanning; a live scanner there needs `expo-camera` and a development build.
 - Trips are stored on the device only (not yet synced to the server).
 - Guest "I've paid" is trust-based (anyone with the link can mark a payment); the owner sees who marked it and can undo it.
 - Rate limiting is in-memory per instance; use a shared store when scaling out.

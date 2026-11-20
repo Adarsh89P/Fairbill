@@ -100,7 +100,7 @@ export function billHtml(b: Bill, c: Computed): string {
   const charges = b.charges.map((ch) => `<tr><td colspan="2">${esc(ch.label)}</td><td class="r">${ch.amount.value === null ? '—' : esc(fmt(b, ch.amount.value))}</td></tr>`).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     body{font-family:-apple-system,Roboto,Helvetica,Arial,sans-serif;color:#0E1E16;padding:28px;font-size:13px}
-    h1{color:#0B6E4F;margin:0 0 2px;font-size:22px} .muted{color:#56665E} h2{font-size:15px;margin:22px 0 6px}
+    h1{color:#4F46E5;margin:0 0 2px;font-size:22px} .muted{color:#5B6075} h2{font-size:15px;margin:22px 0 6px}
     table{width:100%;border-collapse:collapse} td,th{padding:6px 4px;border-bottom:1px solid #E1E8E4;text-align:left} .r{text-align:right} .c{text-align:center}
     .total td{font-weight:700;border-top:2px solid #0E1E16} .card{border:1px solid #E1E8E4;border-radius:10px;padding:10px 12px;margin:8px 0;page-break-inside:avoid}
     .head{display:flex;justify-content:space-between;font-weight:700;font-size:14px}

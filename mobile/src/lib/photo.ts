@@ -105,3 +105,31 @@ async function prepare(p: Photo): Promise<Photo> {
     return p; // fall back to the original photo
   }
 }
+
+/**
+ * Profile photo: a small square JPEG as a data URI (~15 KB), so it can live in the app's settings.
+ * On the web the picker opens inside the tap (call this straight from onPress).
+ */
+export async function pickProfilePhoto(): Promise<string | null> {
+  const SIZE = 256;
+  if (Platform.OS === 'web') {
+    const p = await webPick('library');
+    if (!p) return null;
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new window.Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new PhotoError("That file doesn't look like a photo."));
+      i.src = p.uri;
+    });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement('canvas');
+    c.width = c.height = SIZE;
+    c.getContext('2d')!.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, SIZE, SIZE);
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+  if (res.canceled || !res.assets?.length) return null;
+  const ref = await ImageManipulator.manipulate(res.assets[0].uri).resize({ width: SIZE, height: SIZE }).renderAsync();
+  const out = await ref.saveAsync({ compress: 0.85, format: SaveFormat.JPEG, base64: true });
+  return out.base64 ? `data:image/jpeg;base64,${out.base64}` : out.uri;
+}

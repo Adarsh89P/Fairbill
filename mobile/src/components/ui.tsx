@@ -1,19 +1,5 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputProps,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
 import { avatarColor, radius, space, type } from '../theme/theme';
@@ -117,9 +103,15 @@ export function IconBtn({ icon, onPress, label, color, size = 20, tone }: {
   );
 }
 
-export function Avatar({ name, id, size = 40, selected }: { name: string; id?: string; size?: number; selected?: boolean }) {
+export function Avatar({ name, id, size = 40, selected, photo }: { name: string; id?: string; size?: number; selected?: boolean; photo?: string }) {
   const { c } = useTheme();
   const initials = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?';
+  if (photo) {
+    return (
+      <Image source={{ uri: photo }} accessibilityIgnoresInvertColors
+        style={{ width: size, height: size, borderRadius: size / 2, borderWidth: selected ? 3 : 2, borderColor: selected ? c.primary : c.surface }} />
+    );
+  }
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(id ?? name), alignItems: 'center', justifyContent: 'center',

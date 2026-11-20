@@ -47,6 +47,7 @@ function Navigator() {
         <Stack.Screen name="bill/[id]/image" options={{ title: 'Share bill image', presentation: 'modal' }} />
         <Stack.Screen name="bill/[id]/share" options={{ title: 'Share with friends', presentation: 'modal' }} />
         <Stack.Screen name="group/[id]" options={{ title: 'Group', presentation: 'modal' }} />
+        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
         <Stack.Screen name="stats" options={{ title: 'Monthly spending' }} />
         <Stack.Screen name="account" options={{ title: 'Account', presentation: 'modal' }} />
       </Stack>

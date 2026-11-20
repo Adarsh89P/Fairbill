@@ -28,6 +28,8 @@ export interface Settings {
   sharePhoto: boolean;
   /** New bills join this trip automatically. */
   activeTripId?: string;
+  /** Profile photo as a small data URI (shown on Home and Profile). */
+  photo?: string;
 }
 
 const DEFAULT_API =

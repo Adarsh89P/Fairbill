@@ -20,16 +20,16 @@ export interface Palette {
 }
 
 export const light: Palette = {
-  bg: '#F5F7F6',
+  bg: '#F6F7FB',
   surface: '#FFFFFF',
-  surfaceAlt: '#EEF3F0',
-  text: '#0E1E16',
-  textMuted: '#56665E',
-  border: '#E1E8E4',
-  primary: '#0B6E4F',
-  primaryPressed: '#085A40',
+  surfaceAlt: '#EEF0F7',
+  text: '#111327',
+  textMuted: '#5B6075',
+  border: '#E2E5EF',
+  primary: '#4F46E5',
+  primaryPressed: '#4338CA',
   onPrimary: '#FFFFFF',
-  primarySoft: '#DDF1E8',
+  primarySoft: '#E0E7FF',
   success: '#127A4B',
   successSoft: '#DCF3E7',
   warning: '#A15C00',
@@ -37,20 +37,20 @@ export const light: Palette = {
   danger: '#B42318',
   dangerSoft: '#FDE4E1',
   overlay: 'rgba(0,0,0,0.4)',
-  chart: '#047857',
+  chart: '#4F46E5',
 };
 
 export const dark: Palette = {
-  bg: '#0A110E',
-  surface: '#121C18',
-  surfaceAlt: '#1A2621',
-  text: '#E9F1ED',
-  textMuted: '#97A79F',
-  border: '#24332C',
-  primary: '#3CBF8B',
-  primaryPressed: '#2FA577',
-  onPrimary: '#04130D',
-  primarySoft: '#173A2D',
+  bg: '#0B0D17',
+  surface: '#141726',
+  surfaceAlt: '#1C2033',
+  text: '#ECEDF6',
+  textMuted: '#9EA3B8',
+  border: '#272B40',
+  primary: '#818CF8',
+  primaryPressed: '#6366F1',
+  onPrimary: '#0B0A1F',
+  primarySoft: '#25234D',
   success: '#4BD39A',
   successSoft: '#143327',
   warning: '#F2B24C',
@@ -58,7 +58,7 @@ export const dark: Palette = {
   danger: '#FF7A6E',
   dangerSoft: '#3D1A17',
   overlay: 'rgba(0,0,0,0.6)',
-  chart: '#3CBF8B',
+  chart: '#818CF8',
 };
 
 export const radius = { sm: 10, md: 14, lg: 20, pill: 999 };
@@ -75,7 +75,7 @@ export const type = {
   amount: { fontSize: 20, fontWeight: '700' as const, fontVariant: ['tabular-nums' as const] },
 };
 
-const AVATAR_COLORS = ['#0B6E4F', '#2563EB', '#C2410C', '#7C3AED', '#BE185D', '#0E7490', '#A16207', '#4D7C0F'];
+const AVATAR_COLORS = ['#4F46E5', '#2563EB', '#C2410C', '#7C3AED', '#BE185D', '#0E7490', '#A16207', '#4D7C0F'];
 export function avatarColor(seed: string): string {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;

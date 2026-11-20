@@ -22,14 +22,14 @@ export const BillCard = forwardRef<React.ComponentRef<typeof View>, { bill: Bill
         <Text style={t(15, '600', '#FFFFFF')} numberOfLines={2}>{billTitle(bill)}{bill.date.value ? ` · ${displayDate(bill.date.value)}` : ''}</Text>
         {person ? (
           <>
-            <Text style={t(14, '400', '#DDF1E8')}>{nameOf(bill, person.participantId)}'s share</Text>
+            <Text style={t(14, '400', '#E0E7FF')}>{nameOf(bill, person.participantId)}'s share</Text>
             <Text style={t(36, '800', '#FFFFFF')}>{fmt(bill, person.total)}</Text>
-            <Text style={t(13, '400', '#DDF1E8')}>of {fmt(bill, split.computedTotal)} total{payersText(bill) ? ` · paid by ${payersText(bill)}` : ''}</Text>
+            <Text style={t(13, '400', '#E0E7FF')}>of {fmt(bill, split.computedTotal)} total{payersText(bill) ? ` · paid by ${payersText(bill)}` : ''}</Text>
           </>
         ) : (
           <>
             <Text style={t(36, '800', '#FFFFFF')}>{fmt(bill, split.computedTotal)}</Text>
-            <Text style={t(13, '400', '#DDF1E8')}>Total bill{payersText(bill) ? ` · paid by ${payersText(bill)}` : ''} · {split.people.length} people</Text>
+            <Text style={t(13, '400', '#E0E7FF')}>Total bill{payersText(bill) ? ` · paid by ${payersText(bill)}` : ''} · {split.people.length} people</Text>
           </>
         )}
       </View>

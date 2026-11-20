@@ -1,14 +1,16 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Switch, View } from 'react-native';
-import { api } from '../../api/client';
-import { Avatar, Btn, Card, Chip, Field, Row, Screen, SectionTitle, Segmented, T } from '../../components/ui';
-import { CURRENCIES } from '../../engine/money';
-import { confirmAction, notify } from '../../lib/confirm';
-import { ThemeMode, useStore } from '../../store/AppStore';
-import { useTheme } from '../../theme/ThemeProvider';
-import { space } from '../../theme/theme';
-import { MonthlyChart } from '../stats';
+import { Pressable, Switch, View } from 'react-native';
+import { Icon } from '../components/Icon';
+import { pickProfilePhoto } from '../lib/photo';
+import { api } from '../api/client';
+import { Avatar, Btn, Card, Chip, Field, Row, Screen, SectionTitle, Segmented, T } from '../components/ui';
+import { CURRENCIES } from '../engine/money';
+import { confirmAction, notify } from '../lib/confirm';
+import { ThemeMode, useStore } from '../store/AppStore';
+import { useTheme } from '../theme/ThemeProvider';
+import { space } from '../theme/theme';
+import { MonthlyChart } from './stats';
 
 export default function Profile() {
   const { settings, updateSettings, session, bills } = useStore();
@@ -26,16 +28,30 @@ export default function Profile() {
       }
     });
 
+  const changePhoto = () => {
+    // Opens the picker inside the tap (the web needs that), then stores a small square copy.
+    pickProfilePhoto().then((photo) => { if (photo) updateSettings({ photo }); }).catch((e) => notify('Could not use that photo', e?.message));
+  };
+
   return (
     <Screen>
-      <Card>
+      <Card style={{ gap: space(3) }}>
         <Row>
-          <Avatar name={settings.name} id="me" size={56} />
+          <Pressable onPress={changePhoto} accessibilityRole="button" accessibilityLabel={settings.photo ? 'Change profile photo' : 'Add a profile photo'}>
+            <Avatar name={settings.name} id="me" size={56} photo={settings.photo} />
+            <View style={{ position: 'absolute', right: -2, bottom: -2, width: 22, height: 22, borderRadius: 11, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: c.surface }}>
+              <Icon name="camera" size={12} color={c.onPrimary} />
+            </View>
+          </Pressable>
           <View style={{ flex: 1 }}>
             <T v="heading">{settings.name}</T>
             <T v="small" muted>{session && !session.user.anonymous ? session.user.email : 'Not signed in · bills stay on this device'}</T>
           </View>
           <Btn title={session && !session.user.anonymous ? 'Account' : 'Sign in'} small variant="secondary" onPress={() => router.push('/account')} />
+        </Row>
+        <Row gap={2}>
+          <Btn title={settings.photo ? 'Change photo' : 'Add photo'} icon="image" small variant="ghost" onPress={changePhoto} />
+          {settings.photo ? <Btn title="Remove photo" small variant="ghost" onPress={() => updateSettings({ photo: undefined })} /> : null}
         </Row>
       </Card>
 

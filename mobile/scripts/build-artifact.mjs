@@ -21,9 +21,9 @@ js = js.replace(/<\/script/gi, '<\\/script');
 
 const html = `<title>FairBill</title>
 <style>
-  :root { --bg: #F5F7F6; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0A110E; color-scheme: dark; } }
-  :root[data-theme="dark"] { --bg: #0A110E; color-scheme: dark; }
+  :root { --bg: #F6F7FB; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0B0D17; color-scheme: dark; } }
+  :root[data-theme="dark"] { --bg: #0B0D17; color-scheme: dark; }
   html, body { height: 100%; }
   body { background: var(--bg); overflow: hidden; }
   #root { display: flex; height: 100%; flex: 1; }
