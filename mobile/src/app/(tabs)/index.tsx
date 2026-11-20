@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { startBillPhoto } from '../../lib/photo';
-import { preloadBillReaderIfCheap } from '../../lib/billReader';
+import { preloadBillReaderIfCheap, wakeServer } from '../../lib/billReader';
 import React, { useEffect, useMemo } from 'react';
 import { computeSplit } from '../../engine/split';
 import { settle } from '../../engine/settle';
@@ -8,6 +8,7 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BillRow } from '../../components/BillRow';
 import { Icon } from '../../components/Icon';
+import { InstallCard } from '../../components/InstallCard';
 import { Avatar, Btn, Card, Empty, Row, Screen, SectionTitle, T } from '../../components/ui';
 import { newBill } from '../../engine/factory';
 import { extractionToBill } from '../../extraction/toBill';
@@ -21,7 +22,7 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { bills, saveBill, settings, trips } = useStore();
   // Web without a server: quietly fetch the bill reader in the background on a fast connection.
-  useEffect(() => preloadBillReaderIfCheap(settings.apiUrl), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { wakeServer(settings.apiUrl); preloadBillReaderIfCheap(settings.apiUrl); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const activeTrip = trips.find((t) => t.id === settings.activeTripId);
   const hasName = !!settings.name.trim() && settings.name.trim() !== 'Me';
   /** Payments still to collect or make, across confirmed bills (the dot on the bell). */
@@ -95,6 +96,8 @@ export default function Home() {
           <ActionTile icon="upload" title="Upload Bill" sub="From gallery" onPress={() => { startBillPhoto('library'); router.push({ pathname: '/scan', params: { source: 'library' } }); }} />
           <ActionTile icon="edit" title="Manual Bill" sub="Works offline" onPress={manual} />
         </Row>
+
+        <InstallCard />
 
         <Card style={{ gap: space(2) }}>
           <T v="bodyStrong">No bill handy?</T>

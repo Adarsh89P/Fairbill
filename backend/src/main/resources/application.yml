@@ -32,7 +32,8 @@ management:
         include: health
 
 fairbill:
-  public-base-url: ${FAIRBILL_PUBLIC_URL:}
+  # On Render the service's own https address is filled in automatically.
+  public-base-url: ${FAIRBILL_PUBLIC_URL:${RENDER_EXTERNAL_URL:}}
   # Optional: folder with the exported web app (npx expo export -p web); served at /
   web-dir: ${FAIRBILL_WEB_DIR:}
   jwt:

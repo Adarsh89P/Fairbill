@@ -91,3 +91,13 @@ export async function readBill(uri: string, mimeType: string, deps: ReadBillDeps
     throw e;
   }
 }
+
+/**
+ * Free servers sleep when idle: ping it as soon as the app opens so it is awake by the time the user shares a
+ * bill. Only when a separate server address is configured (not the site's own origin, which has none on Pages).
+ */
+export function wakeServer(apiUrl: string): void {
+  if (typeof fetch === 'undefined') return;
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && apiUrl.replace(/\/+$/, '') === window.location.origin) return;
+  fetch(apiUrl.replace(/\/+$/, '') + '/actuator/health').catch(() => {});
+}

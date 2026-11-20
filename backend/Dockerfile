@@ -17,5 +17,6 @@ USER fairbill
 WORKDIR /app
 COPY --from=build /src/target/fairbill-backend-*.jar app.jar
 EXPOSE 8080
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -Djava.awt.headless=true"
+# Small heap & serial GC so the API fits free 512 MB instances (Tesseract runs outside the heap).
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=55 -XX:+UseSerialGC -Xss512k -XX:ReservedCodeCacheSize=64m -XX:MaxMetaspaceSize=160m -XX:TieredStopAtLevel=1 -Djava.awt.headless=true"
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

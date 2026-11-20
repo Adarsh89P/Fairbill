@@ -51,7 +51,8 @@ export class ApiError extends Error {
   }
 }
 
-const TIMEOUT_MS = 60_000;
+// Free hosting sleeps when idle and takes up to about a minute to wake.
+const TIMEOUT_MS = 90_000;
 
 /** data: URIs are decoded here because the page's security policy doesn't let fetch() read them. */
 async function webBlob(uri: string): Promise<Blob> {

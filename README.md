@@ -79,6 +79,20 @@ cd mobile && npm test && npx tsc --noEmit    # engine + extraction mapper
 cd backend && mvn test                        # parser, real Tesseract pipeline, API flow (H2)
 ```
 
+## Going live for free
+
+| Part | Free host | Notes |
+|---|---|---|
+| Web app | GitHub Pages (`gh-pages` branch, `npm run build:pages`) | Installable: manifest, icons, offline cache; "Install FairBill" card on Home |
+| API + share links | Render free web service (`render.yaml`, Docker, Singapore) | Sleeps after 15 min idle; first request takes ~30–60 s. The app pings it when Home opens |
+| Database | Neon free PostgreSQL | Paste its connection string as `DATABASE_URL`; the API turns it into JDBC settings |
+
+1. Neon → create a project → copy the connection string.
+2. Render → New → Blueprint → this repo → paste the string into `DATABASE_URL`. `FAIRBILL_JWT_SECRET` is generated, the public URL comes from `RENDER_EXTERNAL_URL`, CORS allows the GitHub Pages site.
+3. Rebuild the web app against the API: `EXPO_PUBLIC_API_URL=https://<your-service>.onrender.com npm run build:pages`, then publish `dist-pages/` to `gh-pages`.
+
+App stores aren't free (Google Play $25 once, Apple $99/year); the installable web app is the free way onto phones.
+
 ## API
 
 | Method | Path | Auth |

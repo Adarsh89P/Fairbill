@@ -1,0 +1,20 @@
+# Render Blueprint: free hosting for the FairBill API (Docker, Singapore).
+# Render dashboard → New → Blueprint → pick this repo. You'll be asked for DATABASE_URL:
+# paste the connection string from Neon (neon.tech, free). Everything else is filled in.
+services:
+  - type: web
+    name: fairbill-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: FAIRBILL_JWT_SECRET
+        generateValue: true
+      - key: FAIRBILL_CORS_ORIGINS
+        value: https://adarsh89p.github.io
